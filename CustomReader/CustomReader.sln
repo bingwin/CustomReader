@@ -1,0 +1,38 @@
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CustomReader", "CustomReader.vcxproj", "{4EE67C57-BE79-4CD7-B3B0-94AECE62DB41}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ctmrDll", "..\ctmrDll\ctmrDll.vcxproj", "{3C2FA48C-2AEA-47C0-96E6-CDE13994271B}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ctmrDllTest", "..\ctmrDllTest\ctmrDllTest.vcxproj", "{B171D1E1-BD76-41E7-935E-587E44A27BF2}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+		WinDDK|Win32 = WinDDK|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4EE67C57-BE79-4CD7-B3B0-94AECE62DB41}.Debug|Win32.ActiveCfg = WinDDK|Win32
+		{4EE67C57-BE79-4CD7-B3B0-94AECE62DB41}.Debug|Win32.Build.0 = WinDDK|Win32
+		{4EE67C57-BE79-4CD7-B3B0-94AECE62DB41}.Release|Win32.ActiveCfg = WinDDK|Win32
+		{4EE67C57-BE79-4CD7-B3B0-94AECE62DB41}.Release|Win32.Build.0 = WinDDK|Win32
+		{4EE67C57-BE79-4CD7-B3B0-94AECE62DB41}.WinDDK|Win32.ActiveCfg = WinDDK|Win32
+		{4EE67C57-BE79-4CD7-B3B0-94AECE62DB41}.WinDDK|Win32.Build.0 = WinDDK|Win32
+		{3C2FA48C-2AEA-47C0-96E6-CDE13994271B}.Debug|Win32.ActiveCfg = Debug|Win32
+		{3C2FA48C-2AEA-47C0-96E6-CDE13994271B}.Debug|Win32.Build.0 = Debug|Win32
+		{3C2FA48C-2AEA-47C0-96E6-CDE13994271B}.Release|Win32.ActiveCfg = Release|Win32
+		{3C2FA48C-2AEA-47C0-96E6-CDE13994271B}.Release|Win32.Build.0 = Release|Win32
+		{3C2FA48C-2AEA-47C0-96E6-CDE13994271B}.WinDDK|Win32.ActiveCfg = Release|Win32
+		{3C2FA48C-2AEA-47C0-96E6-CDE13994271B}.WinDDK|Win32.Build.0 = Release|Win32
+		{B171D1E1-BD76-41E7-935E-587E44A27BF2}.Debug|Win32.ActiveCfg = Debug|Win32
+		{B171D1E1-BD76-41E7-935E-587E44A27BF2}.Debug|Win32.Build.0 = Debug|Win32
+		{B171D1E1-BD76-41E7-935E-587E44A27BF2}.Release|Win32.ActiveCfg = Release|Win32
+		{B171D1E1-BD76-41E7-935E-587E44A27BF2}.Release|Win32.Build.0 = Release|Win32
+		{B171D1E1-BD76-41E7-935E-587E44A27BF2}.WinDDK|Win32.ActiveCfg = Release|Win32
+		{B171D1E1-BD76-41E7-935E-587E44A27BF2}.WinDDK|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

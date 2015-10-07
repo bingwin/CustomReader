@@ -1,0 +1,12 @@
+TARGETNAME=CustomReader
+#TARGETPATH=$(BASEDIR)\lib
+TARGETPATH=Win32Debug
+TARGETTYPE=DRIVER
+
+INCLUDES=.\
+
+SOURCES=main.c\
+LogSystem.c\
+Version.c\
+Comm.c
+

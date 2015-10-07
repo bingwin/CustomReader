@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="main">
+      <UniqueIdentifier>{77ae2a0b-3cda-49ee-9021-f5f4f1d9fc55}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Utils">
+      <UniqueIdentifier>{e0ad9fa4-1fa2-4ee3-989f-c14fb7e05ba4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Version">
+      <UniqueIdentifier>{d7ad4ca4-5d8d-4fc1-a803-bd4160389723}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Comm">
+      <UniqueIdentifier>{eb2e8978-35ed-4a17-88d6-5240e46d3252}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.c">
+      <Filter>main</Filter>
+    </ClCompile>
+    <ClCompile Include="LogSystem.c">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Version.c">
+      <Filter>Version</Filter>
+    </ClCompile>
+    <ClCompile Include="Comm.c">
+      <Filter>Comm</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="LogSystem.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Version.h">
+      <Filter>Version</Filter>
+    </ClInclude>
+    <ClInclude Include="Comm.h">
+      <Filter>Comm</Filter>
+    </ClInclude>
+    <ClInclude Include="CtrlCmd.h">
+      <Filter>Comm</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="CommStruct.h">
+      <Filter>Comm</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
