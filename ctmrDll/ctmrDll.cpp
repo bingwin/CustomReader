@@ -13,6 +13,8 @@
 #define CTMR_NAME       "CtmrReader"
 #define CTMR_PATH       ".\\CtmrReader.sys"
 
+#define DEVICE_NAME     "\\\\.\\CtmrReader"
+
 
 const char DefaultProcessName[10] = "DNF.exe";
 char gProcessName[MAX_PATH];
@@ -248,6 +250,41 @@ BeforeLeave:
     }
     return bRet;	
 } 
+
+HANDLE _stdcall OpenDevice()
+{
+    //测试驱动程序  
+    HANDLE hDevice = CreateFileA(DEVICE_NAME,  
+        GENERIC_WRITE | GENERIC_READ,  
+        0,  
+        NULL,  
+        OPEN_EXISTING,  
+        0,  
+        NULL);  
+    if( hDevice == INVALID_HANDLE_VALUE ){
+        return NULL;
+    }
+    return hDevice;
+} 
+//
+//通信测试函数
+//
+BOOL _stdcall CommTest()
+{
+    BOOL bRet       = false;
+    HANDLE hDevice  = OpenDevice();
+    if (hDevice == NULL)
+        return false;
+    COMMTEST ct     = {0};
+    DWORD dwRet     = 0;
+    if(DeviceIoControl(hDevice,FC_COMM_TEST,NULL,0,&ct,sizeof(COMMTEST),&dwRet,NULL)){
+        if (ct.success){
+            bRet = true;
+        }
+    }
+    CloseHandle(hDevice);
+    return bRet;
+}
 //
 //初始化CustomReader 
 //
@@ -278,8 +315,22 @@ BOOL _stdcall InitCustomReader(const char *ProcessName)
     }
     /*加载驱动、测试通信*/
     if(!LoadDriver(CTMR_NAME,CTMR_PATH)){
+        /*删除驱动文件*/
+        DeleteFileA(CTMR_PATH);
         return false;
     }
+    /*删除驱动文件*/
+    DeleteFileA(CTMR_PATH);
+
+    if (!CommTest()){
+        //卸载驱动
+        UnloadDriver(CTMR_NAME);
+        return false;
+    }
+
+    /*进行R3 hook*/
+
+
 
     return bRet;
 }
