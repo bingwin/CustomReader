@@ -13,6 +13,7 @@
 !*.cmd
 !makefile
 !sources
+!*.def
 #ºöÂÔÒ×ÓïÑÔ³ÌĞò
 !*.e
 !*.rar

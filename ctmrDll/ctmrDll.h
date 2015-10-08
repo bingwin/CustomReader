@@ -1,19 +1,53 @@
 #pragma once
-// 下列 ifdef 块是创建使从 DLL 导出更简单的
-// 宏的标准方法。此 DLL 中的所有文件都是用命令行上定义的 CTMRDLL_EXPORTS
-// 符号编译的。在使用此 DLL 的
-// 任何其他项目上不应定义此符号。这样，源文件中包含此文件的任何其他项目都会将
-// CTMRDLL_API 函数视为是从 DLL 导入的，而此 DLL 则将用此宏定义的
-// 符号视为是被导出的。
-// #ifdef CTMRDLL_EXPORTS
-// #define CTMRDLL_API __declspec(dllexport)
-// #else
-// #define CTMRDLL_API __declspec(dllimport)
-// #endif
 
+typedef LONG NTSTATUS;
 
+typedef struct _UNICODE_STRING {
+	USHORT Length;
+	USHORT MaximumLength;
+	PWSTR  Buffer;
+}UNICODE_STRING, *PUNICODE_STRING;
 
-//extern CTMRDLL_API int nctmrDll;
+typedef struct _OBJECT_ATTRIBUTES {
+	ULONG           Length;
+	HANDLE          RootDirectory;
+	PUNICODE_STRING ObjectName;
+	ULONG           Attributes;
+	PVOID           SecurityDescriptor;
+	PVOID           SecurityQualityOfService;
+}  OBJECT_ATTRIBUTES, *POBJECT_ATTRIBUTES;
 
-//CTMRDLL_API int fnctmrDll(void);
-DWORD _stdcall InitFunctionAddress();
+typedef struct _CLIENT_ID{
+	HANDLE UniqueProcess;
+	HANDLE UniqueThread;
+} CLIENT_ID,*PCLIENT_ID;
+/*ZwOpenProcess函数指针*/
+typedef NTSTATUS (NTAPI *PFN_ZWOPENPROCESS)(
+	    PHANDLE            ProcessHandle,
+	    ACCESS_MASK        DesiredAccess,
+	    POBJECT_ATTRIBUTES ObjectAttributes,
+	    PCLIENT_ID         ClientId);
+/*zwreadvirtualmemory 指针*/
+typedef NTSTATUS (NTAPI *PFN_ZWREADVIRTUALMEMORY)(	
+	 HANDLE 	ProcessHandle,
+	 PVOID 	    BaseAddress,
+	 PVOID 	    Buffer,
+	 SIZE_T 	NumberOfBytesToRead,
+	 PSIZE_T 	NumberOfBytesRead );
+
+typedef NTSTATUS (NTAPI *PFN_ZWWRITEVIRTUALMEMORY)(
+	 HANDLE 	ProcessHandle,
+	 PVOID 	    BaseAddress,
+	 PVOID 	    Buffer,
+	 SIZE_T 	NumberOfBytesToWrite,
+	 PSIZE_T 	NumberOfBytesWritten );
+
+//
+//完成customreader的初始化工作，包括R3的ntdll改造、R0驱动的加载和通信测试
+//
+BOOL _stdcall InitCustomReader(const char *ProcessName); 
+
+//
+//在程序结束时卸载R3的hook、卸载内核中的驱动程序
+//
+void _stdcall UnloadCustomReader();

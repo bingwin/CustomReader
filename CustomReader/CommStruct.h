@@ -1,5 +1,6 @@
 #pragma once
-#include "Utils.h"
+
+//typedef unsigned char  BOOL, *PBOOL;
 //
 //通信相关结构
 //

@@ -1,0 +1,6 @@
+;ctmrDll.lib : 导出DLL函数
+;作者：vvLinker
+LIBRARY ctmrDll
+EXPORTS 
+InitCustomReader @ 1
+UnloadCustomReader
