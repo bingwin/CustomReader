@@ -7,7 +7,7 @@
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-
+    InitCustomReader("DNF.exe");
     system("pause");
 	return 0;
 }
