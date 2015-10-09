@@ -6,6 +6,7 @@
 #include "Version.h"
 #include "Comm.h"
 
+PDRIVER_OBJECT gMyDriverObject;
 //
 //Çý¶¯Ð¶ÔØº¯Êý
 //
@@ -20,6 +21,8 @@ VOID DriverUnload(PDRIVER_OBJECT pDriverObj)
 NTSTATUS DriverEntry(PDRIVER_OBJECT pDriverObj,PUNICODE_STRING pRegisterPath)
 {
 	NTSTATUS status = STATUS_UNSUCCESSFUL;
+
+    gMyDriverObject = pDriverObj;
 	/*×¢²áÇý¶¯Ð¶ÔØº¯Êý*/
 	pDriverObj->DriverUnload = DriverUnload;
 

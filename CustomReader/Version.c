@@ -65,12 +65,15 @@ VOID InitStructOffset()
 			gStructOffset.EProcessThreadListHead		= 0x190;
 			gStructOffset.EProcessUniqueProcessId		= 0x84;
 			gStructOffset.EProcessVadRoot				= 0x11c;
+            /*  */
+            gStructOffset.FileObjectSize                = 0x70;
 		}
 		break;
 	case WINDOWS_VERSION_7_7000:
 	case WINDOWS_VERSION_7_7600_UP:
 		{
 			//
+            gStructOffset.FileObjectSize                = 0x80;
 		}
 		break;
 	}

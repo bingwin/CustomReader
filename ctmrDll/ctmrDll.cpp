@@ -5,24 +5,49 @@
 #include "ctmrDll.h"
 #include <tchar.h>
 #include "resource.h"
+#include ".\\mhook-lib\\mhook.h"
+
 /**/
 #include "..\\CustomReader\\CommStruct.h"
 #include "..\\CustomReader\\CtrlCmd.h"
 
+#define STATUS_SUCCESS                          (0x00000000L) // ntsubauth
+#define STATUS_UNSUCCESSFUL                     (0xC0000001L)
+#define STATUS_ACCESS_DENIED                    (0xC0000022L)
 /*驱动名称和驱动所在的路径*/
 #define CTMR_NAME       "CtmrReader"
 #define CTMR_PATH       ".\\CtmrReader.sys"
 
 #define DEVICE_NAME     "\\\\.\\CtmrReader"
 
+/*假的句柄值*/
+#define FAKE_HANDLE         (0x87654321)
+
 
 const char DefaultProcessName[10] = "DNF.exe";
-char gProcessName[MAX_PATH];
+char gProcessName[MAX_PATH+1];
 
 PFN_ZWOPENPROCESS pfnOriZwOpenProcess;
 PFN_ZWREADVIRTUALMEMORY pfnOriZwReadVirtualMemory;
 PFN_ZWWRITEVIRTUALMEMORY pfnOriZwWriteVirtualMemory;
+//
+//三个函数在SSDT表中的索引号
+//
+DWORD gZwOpenProcessIndex;
+DWORD gZwReadVirtualMemoryIndex;
+DWORD gZwWriteVirtualMemoryIndex;
 
+/*xp下*/
+//mov     eax, 115h       ; NtWriteVirtualMemory
+//mov     edx, 7FFE0300h
+//call    dword ptr [edx]
+//retn    14h
+
+/*WIN7 32下*/
+//mov     eax, 18Fh       ; NtWriteVirtualMemory
+//mov     edx, 7FFE0300h
+//call    dword ptr [edx]
+//retn    14h
 
 //
 //释放指定的资源ID到指定的文件
@@ -266,6 +291,7 @@ HANDLE _stdcall OpenDevice()
     }
     return hDevice;
 } 
+
 //
 //通信测试函数
 //
@@ -285,6 +311,206 @@ BOOL _stdcall CommTest()
     CloseHandle(hDevice);
     return bRet;
 }
+
+BOOL __stdcall avGetProcessName(NAMEINFO *pNameInfo)
+{
+    BOOL bRet       = false;
+    DWORD dwRet     = 0;
+    HANDLE hDevice  = OpenDevice();
+    if (hDevice == NULL)
+        return false;
+    if (DeviceIoControl(hDevice,FC_GET_NAME_BY_ID,pNameInfo,sizeof(NAMEINFO),pNameInfo,sizeof(NAMEINFO),&dwRet,NULL)){
+        bRet = true;
+    }
+    CloseHandle(hDevice);
+    return bRet;
+}
+
+BOOL _stdcall avReadMemory(READMEM_INFO * PReadInfo)
+{
+    BOOL bRet       = false;
+    HANDLE hDevice  = OpenDevice();
+    if (hDevice == NULL)
+        return false;
+    DWORD dwRet     = 0;
+    if (DeviceIoControl(hDevice,
+        FC_READ_PROCESS_MEMORY,
+        PReadInfo,
+        sizeof(READMEM_INFO),
+        PReadInfo,
+        sizeof(READMEM_INFO),
+        &dwRet,
+        NULL))
+    {
+        bRet = true;
+    }
+    CloseHandle(hDevice);
+    return bRet;
+}
+
+BOOL _stdcall avWriteMemory(WRITEMEM_INFO * PWriteInfo)
+{
+    BOOL bRet       = false;
+    HANDLE hDevice  = OpenDevice();
+    if (hDevice == NULL)
+        return false;
+
+    DWORD dwRet     = 0;
+    if (DeviceIoControl(hDevice,
+        FC_WRITE_PROCESS_MEMORY,
+        PWriteInfo,
+        sizeof(WRITEMEM_INFO),
+        PWriteInfo,
+        sizeof(WRITEMEM_INFO),
+        &dwRet,
+        NULL))
+    {
+        bRet = true;
+    }
+    CloseHandle(hDevice);
+
+    return bRet;
+}
+//
+//模拟ntdll中的函数
+//
+__declspec(naked) NTSTATUS NTAPI  nakedZwOpenProcess(
+    PHANDLE            ProcessHandle,
+    ACCESS_MASK        DesiredAccess,
+    POBJECT_ATTRIBUTES ObjectAttributes,
+    PCLIENT_ID         ClientId)
+{
+    __asm
+    {
+        mov     eax, gZwOpenProcessIndex
+        mov     edx, 7FFE0300h
+        call    dword ptr [edx]
+        retn    10h
+    }
+}
+
+__declspec(naked) NTSTATUS NTAPI nakedZwReadVirtualMemory(	
+    HANDLE 	    ProcessHandle,
+    PVOID 	    BaseAddress,
+    PVOID 	    Buffer,
+    SIZE_T 	    NumberOfBytesToRead,
+    PSIZE_T 	NumberOfBytesRead )
+{
+    __asm
+    {
+        mov     eax, gZwReadVirtualMemoryIndex
+        mov     edx, 7FFE0300h
+        call    dword ptr [edx]
+        retn    14h
+    }
+}
+
+__declspec(naked) NTSTATUS NTAPI nakedZwWriteVirtualMemory(
+    HANDLE 	    ProcessHandle,
+    PVOID 	    BaseAddress,
+    PVOID 	    Buffer,
+    SIZE_T 	    NumberOfBytesToWrite,
+    PSIZE_T 	NumberOfBytesWritten )
+{
+    __asm
+    {
+        mov     eax, gZwWriteVirtualMemoryIndex
+        mov     edx, 7FFE0300h
+        call    dword ptr [edx]
+        retn    14h
+    }
+}
+
+//
+//新的nt函数
+//
+NTSTATUS NTAPI  avZwOpenProcess(
+    PHANDLE            ProcessHandle,
+    ACCESS_MASK        DesiredAccess,
+    POBJECT_ATTRIBUTES ObjectAttributes,
+    PCLIENT_ID         ClientId)
+{
+    if (ClientId){
+        if (ClientId->UniqueProcess){
+            /*通过pid获取进程名字*/
+            NAMEINFO ni = {0};
+            ni.dwPid    = (DWORD)ClientId->UniqueProcess;
+            if (avGetProcessName(&ni)){
+                if (_stricmp(gProcessName,ni.ProcessName) == 0){
+                    //是我们需要关注的进程，只返回一个 假值，这个句柄没用
+                    *ProcessHandle = (HANDLE)FAKE_HANDLE;
+                    return STATUS_SUCCESS;
+                }
+            }
+        }
+    }
+    
+    return nakedZwOpenProcess(ProcessHandle,DesiredAccess,ObjectAttributes,ClientId);
+}
+
+NTSTATUS NTAPI  avZwReadVirtualMemory(	
+    HANDLE 	    ProcessHandle,
+    PVOID 	    BaseAddress,
+    PVOID 	    Buffer,
+    SIZE_T 	    NumberOfBytesToRead,
+    PSIZE_T 	NumberOfBytesRead )
+{
+    if (ProcessHandle == (HANDLE)FAKE_HANDLE){
+        /*如果要读取的字节大于 MAX_BUFFER * 2的话，不能读取*/
+        if (NumberOfBytesToRead > MAX_BUFFER_LENGTH*2){
+            return STATUS_UNSUCCESSFUL;
+        }
+        //要读取关注进程的内存
+        PREADMEM_INFO pri = new READMEM_INFO;
+        if (pri == NULL)
+            return STATUS_UNSUCCESSFUL;
+        /*清零*/
+        memset(pri,0,sizeof(READMEM_INFO));
+
+        strcpy_s(pri->ProcessName,MAX_BUFFER_LENGTH,gProcessName);
+        pri->BaseAddress         = BaseAddress;
+        pri->NumberOfBytesToRead = NumberOfBytesToRead;
+        if (avReadMemory(pri)){
+            memcpy_s(Buffer,NumberOfBytesToRead,pri->Buffer,NumberOfBytesToRead);
+            *NumberOfBytesRead = pri->NumberOfBytesRead;
+            delete pri;
+            return STATUS_SUCCESS;
+        }
+    }
+    return nakedZwReadVirtualMemory(ProcessHandle,BaseAddress,Buffer,NumberOfBytesToRead,NumberOfBytesRead);
+}
+
+NTSTATUS NTAPI avZwWriteVirtualMemory(
+    HANDLE 	    ProcessHandle,
+    PVOID 	    BaseAddress,
+    PVOID 	    Buffer,
+    SIZE_T 	    NumberOfBytesToWrite,
+    PSIZE_T 	NumberOfBytesWritten )
+{
+    if (ProcessHandle == (HANDLE)FAKE_HANDLE){
+        //要写入关注进程的内存
+        /*如果要写入的字节大于 MAX_BUFFER * 2的话，不能写入*/
+        if (NumberOfBytesToWrite > MAX_BUFFER_LENGTH*2){
+            return STATUS_UNSUCCESSFUL;
+        }
+        //要写入关注进程的内存
+        PWRITEMEM_INFO pwi = new WRITEMEM_INFO;
+        if (pwi == NULL)
+            return STATUS_UNSUCCESSFUL;
+        /*清零*/
+        memset(pwi,0,sizeof(WRITEMEM_INFO));
+        strcpy_s(pwi->ProcessName,MAX_BUFFER_LENGTH,gProcessName);
+        pwi->BaseAddress          = BaseAddress;
+        pwi->NumberOfBytesToWrite = NumberOfBytesToWrite;
+        memcpy_s(pwi->Buffer,MAX_BUFFER_LENGTH*2,Buffer,NumberOfBytesToWrite);
+        if (avWriteMemory(pwi)){
+            *NumberOfBytesWritten = pwi->NumberOfBytesWritten;
+            delete pwi;
+            return STATUS_SUCCESS;
+        }
+    }
+    return nakedZwWriteVirtualMemory(ProcessHandle,BaseAddress,Buffer,NumberOfBytesToWrite,NumberOfBytesWritten);
+}
 //
 //初始化CustomReader 
 //
@@ -292,13 +518,13 @@ BOOL _stdcall InitCustomReader(const char *ProcessName)
 {
     BOOL bRet = false;
     /*初始化游戏进程名*/
-    memset(gProcessName,0,MAX_PATH);
+    memset(gProcessName,0,MAX_PATH+1);
     if (ProcessName == NULL){
         //默认针对dnf
-        memcpy_s(gProcessName,MAX_PATH,DefaultProcessName,strlen(DefaultProcessName)+1);
+        memcpy_s(gProcessName,MAX_PATH+1,DefaultProcessName,strlen(DefaultProcessName)+1);
     }
     else{
-        memcpy_s(gProcessName,MAX_PATH,ProcessName,strlen(ProcessName)+1);
+        memcpy_s(gProcessName,MAX_PATH+1,ProcessName,strlen(ProcessName)+1);
     }
 
     /*获得ntdll中的相关函数的原始地址*/
@@ -308,28 +534,34 @@ BOOL _stdcall InitCustomReader(const char *ProcessName)
     pfnOriZwOpenProcess         = (PFN_ZWOPENPROCESS)GetProcAddress(hNtdll,"ZwOpenProcess");
     pfnOriZwReadVirtualMemory   = (PFN_ZWREADVIRTUALMEMORY)GetProcAddress(hNtdll,"ZwReadVirtualMemory");
     pfnOriZwWriteVirtualMemory  = (PFN_ZWWRITEVIRTUALMEMORY)GetProcAddress(hNtdll,"ZwWriteVirtualMemory");
+    /*获取索引号*/
+    gZwOpenProcessIndex         = *(DWORD *)((DWORD)pfnOriZwOpenProcess + 1);
+    gZwReadVirtualMemoryIndex   = *(DWORD *)((DWORD)pfnOriZwReadVirtualMemory + 1);
+    gZwWriteVirtualMemoryIndex  = *(DWORD *)((DWORD)pfnOriZwWriteVirtualMemory + 1);
 
     /*释放驱动sys的资源到当前目录下*/
     if (!ReleaseResToFile(CTMR_PATH,IDR_SYS_CTMR,"SYS")){
         return false;
     }
     /*加载驱动、测试通信*/
-    if(!LoadDriver(CTMR_NAME,CTMR_PATH)){
-        /*删除驱动文件*/
-        DeleteFileA(CTMR_PATH);
-        return false;
-    }
+    //if(!LoadDriver(CTMR_NAME,CTMR_PATH)){
+    //    /*删除驱动文件*/
+    //    DeleteFileA(CTMR_PATH);
+    //    return false;
+    //}
     /*删除驱动文件*/
     DeleteFileA(CTMR_PATH);
 
-    if (!CommTest()){
-        //卸载驱动
-        UnloadDriver(CTMR_NAME);
-        return false;
-    }
+    //if (!CommTest()){
+    //    //卸载驱动
+    //    UnloadDriver(CTMR_NAME);
+    //    return false;
+    //}
 
     /*进行R3 hook*/
-
+    Mhook_SetHook((PVOID*)&pfnOriZwOpenProcess,avZwOpenProcess);
+    Mhook_SetHook((PVOID*)&pfnOriZwReadVirtualMemory,avZwReadVirtualMemory);
+    Mhook_SetHook((PVOID*)&pfnOriZwWriteVirtualMemory,avZwWriteVirtualMemory);
 
 
     return bRet;
@@ -340,5 +572,8 @@ BOOL _stdcall InitCustomReader(const char *ProcessName)
 //
 void _stdcall UnloadCustomReader()
 {
-    UnloadDriver(CTMR_NAME);
+    //UnloadDriver(CTMR_NAME);
+    Mhook_Unhook((PVOID*)&pfnOriZwOpenProcess);
+    Mhook_Unhook((PVOID*)&pfnOriZwReadVirtualMemory);
+    Mhook_Unhook((PVOID*)&pfnOriZwWriteVirtualMemory);
 }

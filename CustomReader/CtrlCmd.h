@@ -21,3 +21,5 @@
 #define FC_COMM_TEST		        CTRL_EXPRESSION(0)			//测试通信
 #define FC_WRITE_PROCESS_MEMORY     CTRL_EXPRESSION(1)          //写进程内存命令
 #define FC_READ_PROCESS_MEMORY      CTRL_EXPRESSION(2)          //读进程内存命令
+
+#define FC_GET_NAME_BY_ID           CTRL_EXPRESSION(3)          //

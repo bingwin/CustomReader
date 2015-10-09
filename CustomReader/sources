@@ -8,5 +8,9 @@ INCLUDES=.\
 SOURCES=main.c\
 LogSystem.c\
 Version.c\
-Comm.c
+Comm.c\
+Tools.c\
+Fixrelocation.c\
+FileSystem.c\
+KernelReload.c
 

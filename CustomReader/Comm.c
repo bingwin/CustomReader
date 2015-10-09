@@ -1,4 +1,5 @@
 #include "Comm.h"
+#include "Tools.h"
 
 #define CommDeviceName			L"\\Device\\ReaderDevice"
 #define CommSymLink				L"\\??\\ReaderSymLink"
@@ -85,6 +86,29 @@ NTSTATUS UserCmdDispatcher (IN PDEVICE_OBJECT DeviceObject,IN PIRP pIrp)
 			info = cbout;
 		}
 		break;
+    case FC_GET_NAME_BY_ID:
+        {
+            PNAMEINFO pni       = (PNAMEINFO)pIrp->AssociatedIrp.SystemBuffer;
+            status              = LookupNameByProcessId(pni->dwPid,pni->ProcessName);
+            if (NT_SUCCESS(status))
+                info = cbout;
+            else
+                info = 0;
+        }
+        break;
+    case FC_READ_PROCESS_MEMORY:
+        {
+            PREADMEM_INFO pri   = (PREADMEM_INFO)pIrp->AssociatedIrp.SystemBuffer;
+
+            info = cbout;
+        }
+        break;
+    case FC_WRITE_PROCESS_MEMORY:
+        {
+            PWRITEMEM_INFO pwi  = (PWRITEMEM_INFO)pIrp->AssociatedIrp.SystemBuffer;
+            info = cbout;
+        }
+        break;
 	default:
 		status  = STATUS_INVALID_VARIANT;
 		break;

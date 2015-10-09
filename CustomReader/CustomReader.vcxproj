@@ -8,15 +8,25 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Comm.c" />
+    <ClCompile Include="FileSystem.c" />
+    <ClCompile Include="Fixrelocation.c" />
+    <ClCompile Include="KernelReload.c" />
     <ClCompile Include="LogSystem.c" />
     <ClCompile Include="main.c" />
+    <ClCompile Include="Ntos.c" />
+    <ClCompile Include="Tools.c" />
     <ClCompile Include="Version.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Comm.h" />
     <ClInclude Include="CommStruct.h" />
     <ClInclude Include="CtrlCmd.h" />
+    <ClInclude Include="FileSystem.h" />
+    <ClInclude Include="Fixrelocation.h" />
+    <ClInclude Include="KernelReload.h" />
     <ClInclude Include="LogSystem.h" />
+    <ClInclude Include="Ntos.h" />
+    <ClInclude Include="Tools.h" />
     <ClInclude Include="Utils.h" />
     <ClInclude Include="Version.h" />
   </ItemGroup>

@@ -13,6 +13,12 @@
     <Filter Include="Comm">
       <UniqueIdentifier>{eb2e8978-35ed-4a17-88d6-5240e46d3252}</UniqueIdentifier>
     </Filter>
+    <Filter Include="KernelReload">
+      <UniqueIdentifier>{03f419ea-baf8-45b4-977d-ec722a52aac2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Ntos">
+      <UniqueIdentifier>{8a9c5a15-5549-4e75-a397-09da9339324f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.c">
@@ -26,6 +32,21 @@
     </ClCompile>
     <ClCompile Include="Comm.c">
       <Filter>Comm</Filter>
+    </ClCompile>
+    <ClCompile Include="Tools.c">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="FileSystem.c">
+      <Filter>KernelReload</Filter>
+    </ClCompile>
+    <ClCompile Include="Fixrelocation.c">
+      <Filter>KernelReload</Filter>
+    </ClCompile>
+    <ClCompile Include="KernelReload.c">
+      <Filter>KernelReload</Filter>
+    </ClCompile>
+    <ClCompile Include="Ntos.c">
+      <Filter>Ntos</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -46,6 +67,21 @@
     </ClInclude>
     <ClInclude Include="CommStruct.h">
       <Filter>Comm</Filter>
+    </ClInclude>
+    <ClInclude Include="Tools.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="FileSystem.h">
+      <Filter>KernelReload</Filter>
+    </ClInclude>
+    <ClInclude Include="Fixrelocation.h">
+      <Filter>KernelReload</Filter>
+    </ClInclude>
+    <ClInclude Include="KernelReload.h">
+      <Filter>KernelReload</Filter>
+    </ClInclude>
+    <ClInclude Include="Ntos.h">
+      <Filter>Ntos</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

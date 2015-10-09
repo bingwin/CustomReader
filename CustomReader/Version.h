@@ -21,6 +21,8 @@ typedef struct tagStructOffset{
 	ULONG EProcessObjectTable;
 	ULONG EProcessVadRoot;
 	ULONG EProcessThreadListHead;//   : _LIST_ENTRY
+    /*FILEOBJECT 结构相关偏移*/
+    ULONG FileObjectSize;
 
 
 }STRUCT_OFFSET,*PSTRUCT_OFFSET;
