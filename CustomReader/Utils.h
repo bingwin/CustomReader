@@ -52,6 +52,48 @@ typedef struct _LDR_DATA_TABLE_ENTRY {
 
 } LDR_DATA_TABLE_ENTRY, *PLDR_DATA_TABLE_ENTRY;
 
+typedef struct _SYSTEM_MODULE_INFORMATION  // 系统模块信息
+{
+    ULONG  Reserved[2];  
+    ULONG  Base;        
+    ULONG  Size;         
+    ULONG  Flags;        
+    USHORT Index;       
+    USHORT Unknown;     
+    USHORT LoadCount;   
+    USHORT ModuleNameOffset;
+    CHAR   ImageName[256];   
+} SYSTEM_MODULE_INFORMATION, *PSYSTEM_MODULE_INFORMATION;
+
+typedef struct _tagSysModuleList {          //模块链结构
+    ULONG ulCount;
+    SYSTEM_MODULE_INFORMATION smi[1];
+} MODULES, *PMODULES;
+
+typedef struct _SERVICE_DESCRIPTOR_TABLE {
+	/*
+	* Table containing cServices elements of pointers to service handler
+	* functions, indexed by service ID.
+	*/
+	PULONG   ServiceTable;
+	/*
+	* Table that counts how many times each service is used. This table
+	* is only updated in checked builds.
+	*/
+	PULONG  CounterTable;
+	/*
+	* Number of services contained in this table.
+	*/
+	ULONG   TableSize;
+	/*
+	* Table containing the number of bytes of parameters the handler
+	* function takes.
+	*/
+	PUCHAR  ArgumentTable;
+} SERVICE_DESCRIPTOR_TABLE, *PSERVICE_DESCRIPTOR_TABLE;
+/*声明系统描述表*/
+extern PSERVICE_DESCRIPTOR_TABLE    KeServiceDescriptorTable;
+
 PCHAR PsGetProcessImageFileName(PEPROCESS Eprocess);
 
 NTKERNELAPI				
@@ -99,5 +141,15 @@ NTKERNELAPI
     OUT PHANDLE Handle                                          
     ); 
 
+NTSTATUS __stdcall ZwQuerySystemInformation(
+
+    IN ULONG SystemInformationClass,
+
+    PVOID SystemInformation,
+
+    ULONG SystemInformationLength,
+
+    PULONG ReturnLength
+    );
 
 #endif//_UTILS_H_

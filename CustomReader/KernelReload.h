@@ -9,6 +9,7 @@ char NtosModuleName[260];
 BOOL GetNtosInformation(WCHAR** pKernelFullPath,
 	ULONG* ulKernelBase, 
 	ULONG* ulKernelSize);
+BOOL GetNtosInfo(WCHAR **pKernelFullPath,ULONG *ulKernelBase, ULONG *ulKernelSize);
 
 BOOL PeReload(WCHAR* wszFullPath,
 	DWORD ulKernelBase,

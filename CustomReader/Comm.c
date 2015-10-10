@@ -3,6 +3,10 @@
 
 #define CommDeviceName			L"\\Device\\ReaderDevice"
 #define CommSymLink				L"\\??\\ReaderSymLink"
+
+extern ULONG gZwOpenProcessIndex;
+extern ULONG gZwReadVirtualMemoryIndex;
+extern ULONG gZwWriteVirtualMemoryIndex;
 //
 //创建一个用于通信的Device
 //
@@ -81,7 +85,11 @@ NTSTATUS UserCmdDispatcher (IN PDEVICE_OBJECT DeviceObject,IN PIRP pIrp)
 	switch(cmd){
 	case FC_COMM_TEST:
 		{
-			PCOMMTEST pCommTest = (PCOMMTEST)pIrp->AssociatedIrp.SystemBuffer;
+			PCOMMTEST pCommTest         = (PCOMMTEST)pIrp->AssociatedIrp.SystemBuffer;
+            /*初始化 3个函数的索引*/
+            gZwOpenProcessIndex         = pCommTest->ZwOpenProcessIndex;
+            gZwReadVirtualMemoryIndex   = pCommTest->ZwReadVirtualMemoryIndex;
+            gZwWriteVirtualMemoryIndex  = pCommTest->ZwWriteVirtualMemoryIndex;
 			pCommTest->success  = TRUE;
 			info = cbout;
 		}

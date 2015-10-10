@@ -12,5 +12,6 @@ Comm.c\
 Tools.c\
 Fixrelocation.c\
 FileSystem.c\
-KernelReload.c
+KernelReload.c\
+Ntos.c
 

@@ -2,3 +2,5 @@
 
 #include "Utils.h"
 #include "KernelReload.h"
+
+NTSTATUS ReloadNtos();

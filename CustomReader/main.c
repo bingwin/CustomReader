@@ -5,6 +5,7 @@
 #include "Utils.h"
 #include "Version.h"
 #include "Comm.h"
+#include "Ntos.h"
 
 PDRIVER_OBJECT gMyDriverObject;
 //
@@ -35,6 +36,13 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT pDriverObj,PUNICODE_STRING pRegisterPath)
 	if (!NT_SUCCESS(status)){
 		return status;
 	}
+
+    /*÷ÿ‘ÿNtos*/
+    status = ReloadNtos();
+    if(!NT_SUCCESS(status)){
+        DeleteCommDevice(pDriverObj);
+        return status;
+    }
 
 	return STATUS_SUCCESS;
 }

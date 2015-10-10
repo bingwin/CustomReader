@@ -5,13 +5,13 @@
 //KPCR->KdVersionBlock->PsLoadedModuleList->ntoskrnl base address  
 //如果获取ntos成功的话，会分配一块内存给pKernelFullPath
 /************************************************************************/
-BOOL GetNtosInformation(WCHAR** pKernelFullPath,ULONG* ulKernelBase, ULONG* ulKernelSize)
+BOOL GetNtosInformation(WCHAR **pKernelFullPath,ULONG *ulKernelBase, ULONG *ulKernelSize)
 {
-	ULONG ulBase = 0;
-	ULONG ulSize = 0;
-	ULONG ulBufferLength = 0;
-	ULONG ulUnicodeKernelFullPath = 0;
-	WCHAR wszNtosFullPath[260];
+	ULONG ulBase                    = 0;
+	ULONG ulSize                    = 0;
+	ULONG ulBufferLength            = 0;
+	ULONG ulUnicodeKernelFullPath   = 0;
+    WCHAR wszNtosFullPath[260];
 	KeSetSystemAffinityThread(1); //使当前线程运行在第一个处理器上  
 	__asm
 	{  
@@ -55,9 +55,7 @@ BOOL GetNtosInformation(WCHAR** pKernelFullPath,ULONG* ulKernelBase, ULONG* ulKe
 	RtlZeroMemory(wszNtosFullPath,260*2);
 	//UNICODE_STRING->Length 不包括NULL字符
 	if (!MmIsAddressValidEx((PUNICODE_STRING)ulUnicodeKernelFullPath))
-	{
-		return FALSE;
-	}
+        return FALSE;
 	ulBufferLength = (((PUNICODE_STRING)ulUnicodeKernelFullPath)->Length + 1) * 2;
 	if (SafeCopyMemory((PVOID)((PUNICODE_STRING)ulUnicodeKernelFullPath)->Buffer,
 		wszNtosFullPath,
@@ -69,12 +67,12 @@ BOOL GetNtosInformation(WCHAR** pKernelFullPath,ULONG* ulKernelBase, ULONG* ulKe
 	}
 	//拷贝成功的话,就进行对比
 	*pKernelFullPath = (WCHAR*)ExAllocatePoolWithTag(NonPagedPool,260*2,'ILVV');
-	if (!*pKernelFullPath)
-	{
+	if (!*pKernelFullPath){
 		*ulKernelBase = 0;
 		*ulKernelSize = 0;
 		return FALSE;
 	}
+    RtlZeroMemory(*pKernelFullPath,260*2);
 	wcscat(*pKernelFullPath,L"\\SystemRoot\\system32\\");
 	if (wcsstr((const wchar_t*)wszNtosFullPath,L"ntoskrnl.exe") != NULL)
 	{
@@ -106,6 +104,77 @@ BOOL GetNtosInformation(WCHAR** pKernelFullPath,ULONG* ulKernelBase, ULONG* ulKe
 	*ulKernelBase = ulBase;
 	*ulKernelSize = ulSize;
 	return TRUE;
+}
+
+BOOL GetNtosInfo(WCHAR **pKernelFullPath,ULONG *ulKernelBase, ULONG *ulKernelSize)
+{
+    NTSTATUS status;
+    ULONG ulSize;
+    int i;
+    PMODULES pModuleList                = NULL;
+    CHAR *lpszKernelName                = NULL;
+    ANSI_STRING AnsiKernelModule        = {0};
+    UNICODE_STRING uniKernelModule      = {0};
+    BOOL bRet                           = FALSE;
+
+    __try{
+        status = ZwQuerySystemInformation(
+            11,
+            NULL,
+            0,
+            &ulSize);
+        if (status != STATUS_INFO_LENGTH_MISMATCH)
+            goto _CleanUp;
+
+        pModuleList = (PMODULES)ExAllocatePoolWithTag(NonPagedPool,ulSize,'ILVV');
+        if(!pModuleList)
+            goto _CleanUp;
+        RtlZeroMemory(pModuleList,ulSize);
+
+        status = ZwQuerySystemInformation(
+            11,
+            pModuleList,
+            ulSize,
+            &ulSize);
+
+        if (!NT_SUCCESS(status)){
+            bRet = FALSE;
+            goto _CleanUp;
+        }
+
+        *pKernelFullPath = ExAllocatePoolWithTag(NonPagedPool,260*2,'ILVV');
+        if (!*pKernelFullPath){
+            *ulKernelBase   = 0;
+            *ulKernelSize   = 0;
+            bRet            = FALSE;
+            goto _CleanUp;
+        }
+        RtlZeroMemory(*pKernelFullPath,260*2);
+        lpszKernelName = pModuleList->smi[0].ModuleNameOffset+pModuleList->smi[0].ImageName;
+        RtlInitAnsiString(&AnsiKernelModule,lpszKernelName);
+        //分配了内存，记得回收
+        RtlAnsiStringToUnicodeString(&uniKernelModule,&AnsiKernelModule,TRUE);
+
+        wcscat(*pKernelFullPath,L"\\SystemRoot\\system32\\");
+
+        memcpy(
+            *pKernelFullPath+wcslen(L"\\SystemRoot\\system32\\"),
+            uniKernelModule.Buffer,
+            uniKernelModule.Length);
+
+        *ulKernelBase   =(ULONG)pModuleList->smi[0].Base;
+        *ulKernelSize   =(ULONG)pModuleList->smi[0].Size;
+        bRet            = TRUE;
+
+    }__except(EXCEPTION_EXECUTE_HANDLER){
+        bRet = FALSE;
+    }
+_CleanUp:
+    if(pModuleList)
+        ExFreePool(pModuleList);
+    RtlFreeUnicodeString(&uniKernelModule);
+    return bRet;
+
 }
 //////////////////////////////////////////////////////////////////////////
 BOOL GetWindowsRootName(WCHAR *WindowsRootName)
