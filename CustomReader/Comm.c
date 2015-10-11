@@ -4,9 +4,81 @@
 #define CommDeviceName			L"\\Device\\ReaderDevice"
 #define CommSymLink				L"\\??\\ReaderSymLink"
 
-extern ULONG gZwOpenProcessIndex;
-extern ULONG gZwReadVirtualMemoryIndex;
-extern ULONG gZwWriteVirtualMemoryIndex;
+PFN_KESTACKATTACHPROCESS gReloadKeStackAttachProcess;
+PFN_KEUNSTACKDETACHPROCESS gReloadKeUnstackDetachProcess;
+//extern ULONG gZwOpenProcessIndex;
+//extern ULONG gZwReadVirtualMemoryIndex;
+//extern ULONG gZwWriteVirtualMemoryIndex;
+NTSTATUS __stdcall MyReadVirtualMemory(	
+    char 	    *ProcessName,
+    PVOID 	    BaseAddress,
+    PVOID 	    Buffer,
+    SIZE_T 	    NumberOfBytesToRead,
+    PSIZE_T 	NumberOfBytesRead )
+{
+    NTSTATUS status;
+    PEPROCESS targetProcess = NULL;
+    KAPC_STATE apcState;
+
+    status = LookupProcessByName(ProcessName,&targetProcess);
+    if (!NT_SUCCESS(status)){
+        return status;
+    }
+    gReloadKeStackAttachProcess((PKPROCESS)targetProcess,&apcState);
+    if (MmIsAddressValidEx(BaseAddress)){
+        __try{
+            ProbeForRead(BaseAddress,NumberOfBytesToRead,sizeof(BYTE));
+            ProbeForWrite(Buffer,NumberOfBytesToRead,sizeof(BYTE));
+            RtlCopyMemory(Buffer,BaseAddress,NumberOfBytesToRead);
+
+            ProbeForWrite(NumberOfBytesRead,sizeof(ULONG),sizeof(ULONG));
+            *NumberOfBytesRead = NumberOfBytesToRead;
+        }
+        __except(EXCEPTION_EXECUTE_HANDLER){
+            status  = STATUS_UNSUCCESSFUL;
+            gReloadKeUnstackDetachProcess(&apcState);
+            return status;
+        }
+    }
+    gReloadKeUnstackDetachProcess(&apcState);
+    return status;
+}
+
+NTSTATUS __stdcall MyWriteVirtualMemory(
+    char 	    *ProcessName,
+    PVOID 	    BaseAddress,
+    PVOID 	    Buffer,
+    SIZE_T 	    NumberOfBytesToWrite,
+    PSIZE_T 	NumberOfBytesWritten )
+{
+    NTSTATUS status;
+    PEPROCESS targetProcess = NULL;
+    KAPC_STATE apcState;
+
+    status = LookupProcessByName(ProcessName,&targetProcess);
+    if (!NT_SUCCESS(status)){
+        return status;
+    }
+    gReloadKeStackAttachProcess((PKPROCESS)targetProcess,&apcState);
+    if (MmIsAddressValidEx(BaseAddress)){
+        __try{
+            ProbeForRead(Buffer,NumberOfBytesToWrite,sizeof(BYTE));
+            ProbeForWrite(BaseAddress,NumberOfBytesToWrite,sizeof(BYTE));
+            RtlCopyMemory(BaseAddress,Buffer,NumberOfBytesToWrite);
+
+            ProbeForWrite(NumberOfBytesWritten,sizeof(ULONG),sizeof(ULONG));
+            *NumberOfBytesWritten = NumberOfBytesToWrite;
+        }
+        __except(EXCEPTION_EXECUTE_HANDLER){
+            status  = STATUS_UNSUCCESSFUL;
+            gReloadKeUnstackDetachProcess(&apcState);
+            return status;
+        }
+    }
+    gReloadKeUnstackDetachProcess(&apcState);
+    return status;
+}
+
 //
 //创建一个用于通信的Device
 //
@@ -46,7 +118,7 @@ NTSTATUS CreateCommDevice(IN PDRIVER_OBJECT pDriverObj)
 //
 //删除device
 //
-VOID DeleteCommDevice(IN PDRIVER_OBJECT pDriverObj)
+VOID DeleteComm(IN PDRIVER_OBJECT pDriverObj)
 {
 	PDEVICE_OBJECT		pDevObj			= NULL;
 	UNICODE_STRING		uniSymLinkName	= {0};
@@ -86,10 +158,6 @@ NTSTATUS UserCmdDispatcher (IN PDEVICE_OBJECT DeviceObject,IN PIRP pIrp)
 	case FC_COMM_TEST:
 		{
 			PCOMMTEST pCommTest         = (PCOMMTEST)pIrp->AssociatedIrp.SystemBuffer;
-            /*初始化 3个函数的索引*/
-            gZwOpenProcessIndex         = pCommTest->ZwOpenProcessIndex;
-            gZwReadVirtualMemoryIndex   = pCommTest->ZwReadVirtualMemoryIndex;
-            gZwWriteVirtualMemoryIndex  = pCommTest->ZwWriteVirtualMemoryIndex;
 			pCommTest->success  = TRUE;
 			info = cbout;
 		}
@@ -107,14 +175,42 @@ NTSTATUS UserCmdDispatcher (IN PDEVICE_OBJECT DeviceObject,IN PIRP pIrp)
     case FC_READ_PROCESS_MEMORY:
         {
             PREADMEM_INFO pri   = (PREADMEM_INFO)pIrp->AssociatedIrp.SystemBuffer;
+            __try{
+                ProbeForRead(pri,sizeof(READMEM_INFO),sizeof(UCHAR));
+            }
+            __except(EXCEPTION_EXECUTE_HANDLER){
+                status = GetExceptionCode();
+            }
+            if (NT_SUCCESS(status)){
+                status  = MyReadVirtualMemory(pri->ProcessName,
+                    pri->BaseAddress,
+                    pri->Buffer,
+                    pri->NumberOfBytesToRead,
+                    &pri->NumberOfBytesRead);
+            }
+            info = NT_SUCCESS(status) ? cbout : 0;
 
-            info = cbout;
         }
         break;
     case FC_WRITE_PROCESS_MEMORY:
         {
             PWRITEMEM_INFO pwi  = (PWRITEMEM_INFO)pIrp->AssociatedIrp.SystemBuffer;
-            info = cbout;
+
+            __try{
+                ProbeForRead(pwi,sizeof(WRITEMEM_INFO),sizeof(UCHAR));
+            }
+            __except(EXCEPTION_EXECUTE_HANDLER){
+                status = GetExceptionCode();
+            }
+            if (NT_SUCCESS(status)){
+                status  = MyWriteVirtualMemory(pwi->ProcessName,
+                    pwi->BaseAddress,
+                    pwi->Buffer,
+                    pwi->NumberOfBytesToWrite,
+                    &pwi->NumberOfBytesWritten);
+            }
+            info = NT_SUCCESS(status) ? cbout : 0;
+
         }
         break;
 	default:

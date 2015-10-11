@@ -51,6 +51,54 @@ NTSTATUS LookupNameByProcessId(
     return status;
 }
 
+//
+//根据进程名找到进程对象
+//
+NTSTATUS LookupProcessByName(IN CHAR *ProcessName,OUT PEPROCESS *Eprocess)
+{
+    NTSTATUS status                 = STATUS_UNSUCCESSFUL;
+    ULONG ulCount                   = 0;
+    PLIST_ENTRY	pActiveProcessList  = NULL;
+    ULONG ulCurrentProcess          = 0;
+    ULONG ulNextProcess             = 0;
+    CHAR szImageName[100]; 
+    CHAR *szProcessName             = NULL;
+
+    if (KeGetCurrentIrql() > PASSIVE_LEVEL){
+        return STATUS_UNSUCCESSFUL;
+    }
+
+    ulCurrentProcess    = (ULONG)PsGetCurrentProcess();
+    ulNextProcess       = ulCurrentProcess;
+    __try{
+
+        memset(szImageName,0,sizeof(szImageName));
+        memcpy_s(szImageName,100,ProcessName,16);
+        do {
+            if ((ulCount >= 1) && (ulNextProcess == ulCurrentProcess)){
+                status = STATUS_NOT_FOUND;
+                break;
+            }
+            /*进程名对比查找*/
+            szProcessName   = PsGetProcessImageFileName((PEPROCESS)ulCurrentProcess);
+            if (_stricmp(szProcessName,szImageName) == 0){
+                
+                *Eprocess   = (PEPROCESS)ulCurrentProcess;
+                status      = STATUS_SUCCESS;
+                break;
+            }
+            pActiveProcessList = (PLIST_ENTRY)(ulCurrentProcess + gStructOffset.EProcessActiveProcessLinks);
+            ulCurrentProcess   = (ULONG)pActiveProcessList->Flink - gStructOffset.EProcessActiveProcessLinks;
+            ulCount++;
+        } while (TRUE);
+    }
+    __except(EXCEPTION_EXECUTE_HANDLER)
+    {
+        status = STATUS_NOT_FOUND;
+    }
+    return status;
+}
+
 
 __inline ULONG CR4()
 {

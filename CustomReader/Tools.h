@@ -160,6 +160,8 @@ NTSTATUS LookupNameByProcessId(
     OUT CHAR * szProcessName
     );
 
+NTSTATUS LookupProcessByName(IN CHAR *ProcessName,OUT PEPROCESS *Eprocess);
+
 NTSTATUS SafeCopyMemory(PVOID SrcAddr, PVOID DstAddr, ULONG Size);
 //
 BOOL MmIsAddressValidEx(

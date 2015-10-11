@@ -23,9 +23,9 @@
 /*假的句柄值*/
 #define FAKE_HANDLE         (0x87654321)
 
-
-const char DefaultProcessName[10] = "DNF.exe";
-char gProcessName[MAX_PATH+1];
+/*加密之后的*/
+const char GameProcessName[20] = "ITM6n俻";
+//char gProcessName[MAX_PATH+1];
 
 PFN_ZWOPENPROCESS pfnOriZwOpenProcess;
 PFN_ZWREADVIRTUALMEMORY pfnOriZwReadVirtualMemory;
@@ -48,6 +48,25 @@ DWORD gZwWriteVirtualMemoryIndex;
 //mov     edx, 7FFE0300h
 //call    dword ptr [edx]
 //retn    14h
+
+//
+//简单的加密解密字符串函数
+//
+void SimpleEncryptString(const char *src,int len,char *dest)
+{
+    int i;
+    for (i = 0; i < len; i++){
+        *(dest+i) = *(src+i) + i + 5;
+    }
+}
+
+void SimpleDecryptString(const char *src,int len,char *dest)
+{
+    int i;
+    for (i = 0; i < len; i++){
+        *(dest+i) = *(src+i) - i - 5;
+    }
+}
 
 //
 //释放指定的资源ID到指定的文件
@@ -436,7 +455,10 @@ NTSTATUS NTAPI  avZwOpenProcess(
             NAMEINFO ni = {0};
             ni.dwPid    = (DWORD)ClientId->UniqueProcess;
             if (avGetProcessName(&ni)){
-                if (_stricmp(gProcessName,ni.ProcessName) == 0){
+                /*解密*/
+                char DecryptString[20]={0};
+                SimpleDecryptString(GameProcessName,strlen(GameProcessName),DecryptString);
+                if (_stricmp(DecryptString,ni.ProcessName) == 0){
                     //是我们需要关注的进程，只返回一个 假值，这个句柄没用
                     *ProcessHandle = (HANDLE)FAKE_HANDLE;
                     return STATUS_SUCCESS;
@@ -455,6 +477,7 @@ NTSTATUS NTAPI  avZwReadVirtualMemory(
     SIZE_T 	    NumberOfBytesToRead,
     PSIZE_T 	NumberOfBytesRead )
 {
+    char DecryptString[20] = {0};
     if (ProcessHandle == (HANDLE)FAKE_HANDLE){
         /*如果要读取的字节大于 MAX_BUFFER * 2的话，不能读取*/
         if (NumberOfBytesToRead > MAX_BUFFER_LENGTH*2){
@@ -466,8 +489,8 @@ NTSTATUS NTAPI  avZwReadVirtualMemory(
             return STATUS_UNSUCCESSFUL;
         /*清零*/
         memset(pri,0,sizeof(READMEM_INFO));
-
-        strcpy_s(pri->ProcessName,MAX_BUFFER_LENGTH,gProcessName);
+        SimpleDecryptString(GameProcessName,strlen(GameProcessName),DecryptString);
+        strcpy_s(pri->ProcessName,MAX_BUFFER_LENGTH,DecryptString);
         pri->BaseAddress         = BaseAddress;
         pri->NumberOfBytesToRead = NumberOfBytesToRead;
         if (avReadMemory(pri)){
@@ -487,6 +510,7 @@ NTSTATUS NTAPI avZwWriteVirtualMemory(
     SIZE_T 	    NumberOfBytesToWrite,
     PSIZE_T 	NumberOfBytesWritten )
 {
+    char DecryptString[20] = {0};
     if (ProcessHandle == (HANDLE)FAKE_HANDLE){
         //要写入关注进程的内存
         /*如果要写入的字节大于 MAX_BUFFER * 2的话，不能写入*/
@@ -497,9 +521,10 @@ NTSTATUS NTAPI avZwWriteVirtualMemory(
         PWRITEMEM_INFO pwi = new WRITEMEM_INFO;
         if (pwi == NULL)
             return STATUS_UNSUCCESSFUL;
+        SimpleDecryptString(GameProcessName,strlen(GameProcessName),DecryptString);
         /*清零*/
         memset(pwi,0,sizeof(WRITEMEM_INFO));
-        strcpy_s(pwi->ProcessName,MAX_BUFFER_LENGTH,gProcessName);
+        strcpy_s(pwi->ProcessName,MAX_BUFFER_LENGTH,DecryptString);
         pwi->BaseAddress          = BaseAddress;
         pwi->NumberOfBytesToWrite = NumberOfBytesToWrite;
         memcpy_s(pwi->Buffer,MAX_BUFFER_LENGTH*2,Buffer,NumberOfBytesToWrite);
@@ -514,18 +539,9 @@ NTSTATUS NTAPI avZwWriteVirtualMemory(
 //
 //初始化CustomReader 
 //
-BOOL _stdcall InitCustomReader(const char *ProcessName)
+BOOL _stdcall InitCustomReader()
 {
     BOOL bRet = false;
-    /*初始化游戏进程名*/
-    memset(gProcessName,0,MAX_PATH+1);
-    if (ProcessName == NULL){
-        //默认针对dnf
-        memcpy_s(gProcessName,MAX_PATH+1,DefaultProcessName,strlen(DefaultProcessName)+1);
-    }
-    else{
-        memcpy_s(gProcessName,MAX_PATH+1,ProcessName,strlen(ProcessName)+1);
-    }
 
     /*获得ntdll中的相关函数的原始地址*/
     HMODULE hNtdll = GetModuleHandle(_T("ntdll.dll"));

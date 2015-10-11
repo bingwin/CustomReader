@@ -4,14 +4,16 @@ extern PDRIVER_OBJECT gMyDriverObject;
 /*原始内核的基址*/
 ULONG gNtosModuleBase;
 BYTE *gReloadModuleBase;
-PSERVICE_DESCRIPTOR_TABLE gServiceTable = NULL;
+
+extern PFN_KESTACKATTACHPROCESS gReloadKeStackAttachProcess;
+extern PFN_KEUNSTACKDETACHPROCESS gReloadKeUnstackDetachProcess;
 
 //
 //三个函数在SSDT表中的索引号
 //
-ULONG gZwOpenProcessIndex;
-ULONG gZwReadVirtualMemoryIndex;
-ULONG gZwWriteVirtualMemoryIndex;
+//ULONG gZwOpenProcessIndex;
+//ULONG gZwReadVirtualMemoryIndex;
+//ULONG gZwWriteVirtualMemoryIndex;
 
 /* 重载ntos模块 */
 NTSTATUS ReloadNtos()
@@ -32,11 +34,21 @@ NTSTATUS ReloadNtos()
             ExFreePool(gReloadModuleBase);
         return STATUS_UNSUCCESSFUL;
     }
-    gServiceTable               = (PSERVICE_DESCRIPTOR_TABLE)((ULONG)gReloadModuleBase + (ULONG)KeServiceDescriptorTable - gNtosModuleBase);
-    gServiceTable->TableSize    = KeServiceDescriptorTable->TableSize;
-    gServiceTable->ServiceTable = (PULONG)((ULONG)gReloadModuleBase + (ULONG)KeServiceDescriptorTable->ServiceTable - gNtosModuleBase);
+    /*初始化两个切换函数*/
+    gReloadKeStackAttachProcess     = (PFN_KESTACKATTACHPROCESS)(gNtosModuleBase - (ULONG)KeStackAttachProcess + (ULONG)gReloadModuleBase);
+    gReloadKeUnstackDetachProcess   = (PFN_KEUNSTACKDETACHPROCESS)(gNtosModuleBase - (ULONG)KeUnstackDetachProcess + (ULONG)gReloadModuleBase);
     if (szNtosFilePath){
         ExFreePool(szNtosFilePath);
     }
     return STATUS_SUCCESS;
+}
+
+//
+//释放reloadntos
+//
+VOID FreeNtos()
+{
+    if (gReloadModuleBase){
+        ExFreePool(gReloadModuleBase);
+    }
 }

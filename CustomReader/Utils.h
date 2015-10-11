@@ -94,6 +94,15 @@ typedef struct _SERVICE_DESCRIPTOR_TABLE {
 /*声明系统描述表*/
 extern PSERVICE_DESCRIPTOR_TABLE    KeServiceDescriptorTable;
 
+typedef struct _KAPC_STATE             // 5 elements, 0x18 bytes (sizeof) 
+{                                                                         
+    /*0x000*/     struct _LIST_ENTRY ApcListHead[2];                                    
+    /*0x010*/     PVOID   Process;                                            
+    /*0x014*/     UINT8   KernelApcInProgress;                                     
+    /*0x015*/     UINT8   KernelApcPending;                                        
+    /*0x016*/     UINT8   UserApcPending;                                                                               
+}KAPC_STATE, *PKAPC_STATE; 
+
 PCHAR PsGetProcessImageFileName(PEPROCESS Eprocess);
 
 NTKERNELAPI				
@@ -152,4 +161,6 @@ NTSTATUS __stdcall ZwQuerySystemInformation(
     PULONG ReturnLength
     );
 
+VOID NTAPI KeStackAttachProcess	(IN PKPROCESS 	Process,OUT PKAPC_STATE 	ApcState );	
+VOID NTAPI KeUnstackDetachProcess(IN PKAPC_STATE ApcState)	;
 #endif//_UTILS_H_

@@ -9,9 +9,9 @@
 #pragma pack(1)
 typedef struct tagCOMMTEST{
 	BOOL success;
-    ULONG ZwOpenProcessIndex;
-    ULONG ZwReadVirtualMemoryIndex;
-    ULONG ZwWriteVirtualMemoryIndex;
+    //ULONG ZwOpenProcessIndex;
+    //ULONG ZwReadVirtualMemoryIndex;
+    //ULONG ZwWriteVirtualMemoryIndex;
 }COMMTEST,*PCOMMTEST;
 
 typedef struct tagNAMEINFO{

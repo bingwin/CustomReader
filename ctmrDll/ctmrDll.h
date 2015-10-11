@@ -45,7 +45,7 @@ typedef NTSTATUS (NTAPI *PFN_ZWWRITEVIRTUALMEMORY)(
 //
 //完成customreader的初始化工作，包括R3的ntdll改造、R0驱动的加载和通信测试
 //
-BOOL _stdcall InitCustomReader(const char *ProcessName); 
+BOOL _stdcall InitCustomReader(); 
 
 //
 //在程序结束时卸载R3的hook、卸载内核中的驱动程序

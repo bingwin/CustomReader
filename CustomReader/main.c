@@ -14,7 +14,8 @@ PDRIVER_OBJECT gMyDriverObject;
 VOID DriverUnload(PDRIVER_OBJECT pDriverObj)
 {
 	LogPrint("DriverUnload called...\r\n");
-	DeleteCommDevice(pDriverObj);
+	DeleteComm(pDriverObj);
+    FreeNtos();
 }
 //
 //驱动入口函数
@@ -40,7 +41,7 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT pDriverObj,PUNICODE_STRING pRegisterPath)
     /*重载Ntos*/
     status = ReloadNtos();
     if(!NT_SUCCESS(status)){
-        DeleteCommDevice(pDriverObj);
+        DeleteComm(pDriverObj);
         return status;
     }
 
