@@ -161,6 +161,9 @@ NTSTATUS __stdcall ZwQuerySystemInformation(
     PULONG ReturnLength
     );
 
-VOID NTAPI KeStackAttachProcess	(IN PKPROCESS 	Process,OUT PKAPC_STATE 	ApcState );	
-VOID NTAPI KeUnstackDetachProcess(IN PKAPC_STATE ApcState)	;
+//VOID NTAPI KeStackAttachProcess	(IN PKPROCESS 	Process,OUT PKAPC_STATE 	ApcState );	
+//VOID NTAPI KeUnstackDetachProcess(IN PKAPC_STATE ApcState)	;
+
+typedef VOID (NTAPI *PFN_KESTACKATTACHPROCESS)(IN PKPROCESS 	Process,OUT PKAPC_STATE 	ApcState );	
+typedef VOID (NTAPI *PFN_KEUNSTACKDETACHPROCESS)(IN PKAPC_STATE ApcState)	;
 #endif//_UTILS_H_

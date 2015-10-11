@@ -2,6 +2,8 @@
 //
 
 #include "stdafx.h"
+#include <stdio.h>
+#include <stdlib.h>
 #include "ctmrDll.h"
 #include <tchar.h>
 #include "resource.h"
@@ -18,7 +20,7 @@
 #define CTMR_NAME       "CtmrReader"
 #define CTMR_PATH       ".\\CtmrReader.sys"
 
-#define DEVICE_NAME     "\\\\.\\CtmrReader"
+#define DEVICE_NAME     "\\\\.\\ReaderSymLink"
 
 /*假的句柄值*/
 #define FAKE_HANDLE         (0x87654321)
@@ -49,6 +51,27 @@ DWORD gZwWriteVirtualMemoryIndex;
 //call    dword ptr [edx]
 //retn    14h
 
+inline void __cdecl DbgPrint(PCSTR format, ...) {
+    va_list	args;
+    va_start(args, format);
+    int len = _vscprintf(format, args);
+    if (len > 0) {
+        len += (1 + 2);
+        PSTR buf = (PSTR) malloc(len);
+        if (buf) {
+            len = vsprintf_s(buf, len, format, args);
+            if (len > 0) {
+                while (len && isspace(buf[len-1])) len--;
+                buf[len++] = '\r';
+                buf[len++] = '\n';
+                buf[len] = 0;
+                OutputDebugStringA(buf);
+            }
+            free(buf);
+        }
+        va_end(args);
+    }
+}
 //
 //简单的加密解密字符串函数
 //
@@ -116,6 +139,7 @@ BOOL _stdcall ReleaseResToFile(const char * lpszFilePath, DWORD dwResID, const c
         CloseHandle(hFile);
         return false;
     }
+    OutputDebugStringA("WriteFile ok!\r\n");
     CloseHandle(hFile);
     return true;
 }
@@ -167,7 +191,7 @@ BOOL _stdcall LoadDriver(const char * lpszDriverName,const char * lpszDriverPath
         dwRtn = GetLastError();
         if( dwRtn != ERROR_IO_PENDING && dwRtn != ERROR_SERVICE_EXISTS ){  
             //由于其他原因创建服务失败
-            OutputDebugStringA( "CrateService() Failed! \r\n" );  
+            OutputDebugStringA( "CreateService() Failed! \r\n" );  
             bRet = false;
             goto BeforeLeave;
         }  
@@ -190,7 +214,7 @@ BOOL _stdcall LoadDriver(const char * lpszDriverName,const char * lpszDriverPath
         }
     }  
     else{
-        OutputDebugStringA( "CrateService() ok ! \n" );
+        OutputDebugStringA( "CreateService() ok ! \n" );
     }
 
     //开启此项服务
@@ -198,7 +222,7 @@ BOOL _stdcall LoadDriver(const char * lpszDriverName,const char * lpszDriverPath
     if( !bRet ){  
         DWORD dwRtn = GetLastError();  
         if( dwRtn != ERROR_IO_PENDING && dwRtn != ERROR_SERVICE_ALREADY_RUNNING ){  
-            OutputDebugStringA( "StartService() Failed! \r\n" );  
+            DbgPrint("StartService() Failed,Err : 0x%x \r\n",dwRtn);
             bRet = false;
             goto BeforeLeave;
         }  
@@ -559,20 +583,22 @@ BOOL _stdcall InitCustomReader()
     if (!ReleaseResToFile(CTMR_PATH,IDR_SYS_CTMR,"SYS")){
         return false;
     }
+    OutputDebugStringA("ReleaseResToFile ok!\r\n");
+    Sleep(100);
     /*加载驱动、测试通信*/
-    //if(!LoadDriver(CTMR_NAME,CTMR_PATH)){
-    //    /*删除驱动文件*/
-    //    DeleteFileA(CTMR_PATH);
-    //    return false;
-    //}
+    if(!LoadDriver(CTMR_NAME,CTMR_PATH)){
+        /*删除驱动文件*/
+        //DeleteFileA(CTMR_PATH);
+        return false;
+    }
     /*删除驱动文件*/
-    DeleteFileA(CTMR_PATH);
+    //DeleteFileA(CTMR_PATH);
 
-    //if (!CommTest()){
-    //    //卸载驱动
-    //    UnloadDriver(CTMR_NAME);
-    //    return false;
-    //}
+    if (!CommTest()){
+        //卸载驱动
+        UnloadDriver(CTMR_NAME);
+        return false;
+    }
 
     /*进行R3 hook*/
     Mhook_SetHook((PVOID*)&pfnOriZwOpenProcess,avZwOpenProcess);
@@ -588,7 +614,7 @@ BOOL _stdcall InitCustomReader()
 //
 void _stdcall UnloadCustomReader()
 {
-    //UnloadDriver(CTMR_NAME);
+    UnloadDriver(CTMR_NAME);
     Mhook_Unhook((PVOID*)&pfnOriZwOpenProcess);
     Mhook_Unhook((PVOID*)&pfnOriZwReadVirtualMemory);
     Mhook_Unhook((PVOID*)&pfnOriZwWriteVirtualMemory);

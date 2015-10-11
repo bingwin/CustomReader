@@ -161,6 +161,7 @@ NTSTATUS LookupNameByProcessId(
     );
 
 NTSTATUS LookupProcessByName(IN CHAR *ProcessName,OUT PEPROCESS *Eprocess);
+BYTE *GetExportedFunctionAddr(WCHAR *FunctionName);
 
 NTSTATUS SafeCopyMemory(PVOID SrcAddr, PVOID DstAddr, ULONG Size);
 //

@@ -18,8 +18,10 @@ extern PFN_KEUNSTACKDETACHPROCESS gReloadKeUnstackDetachProcess;
 /* 重载ntos模块 */
 NTSTATUS ReloadNtos()
 {
-    WCHAR *szNtosFilePath   = NULL;
-    ULONG ulNtosModuleSize  = 0;
+    WCHAR *szNtosFilePath           = NULL;
+    ULONG ulNtosModuleSize          = 0;
+    BYTE *pKeStackAttachProcess     = NULL;
+    BYTE * pKeUnstackDetachProcess  = NULL;
     //PSERVICE_DESCRIPTOR_TABLE pShadowTable = NULL;
     //NTSTATUS status = STATUS_UNSUCCESSFUL;
     if (!GetNtosInfo(&szNtosFilePath,&gNtosModuleBase,&ulNtosModuleSize)){
@@ -34,9 +36,18 @@ NTSTATUS ReloadNtos()
             ExFreePool(gReloadModuleBase);
         return STATUS_UNSUCCESSFUL;
     }
+    pKeStackAttachProcess           = GetExportedFunctionAddr(L"KeStackAttachProcess");
+    pKeUnstackDetachProcess         = GetExportedFunctionAddr(L"KeUnstackDetachProcess");
+    if(!pKeStackAttachProcess || !pKeUnstackDetachProcess){
+        if (szNtosFilePath)
+            ExFreePool(szNtosFilePath);
+        if (gReloadModuleBase)
+            ExFreePool(gReloadModuleBase);
+        return STATUS_UNSUCCESSFUL;
+    }
     /*初始化两个切换函数*/
-    gReloadKeStackAttachProcess     = (PFN_KESTACKATTACHPROCESS)(gNtosModuleBase - (ULONG)KeStackAttachProcess + (ULONG)gReloadModuleBase);
-    gReloadKeUnstackDetachProcess   = (PFN_KEUNSTACKDETACHPROCESS)(gNtosModuleBase - (ULONG)KeUnstackDetachProcess + (ULONG)gReloadModuleBase);
+    gReloadKeStackAttachProcess     = (PFN_KESTACKATTACHPROCESS)((ULONG)pKeStackAttachProcess - gNtosModuleBase + (ULONG)gReloadModuleBase);
+    gReloadKeUnstackDetachProcess   = (PFN_KEUNSTACKDETACHPROCESS)((ULONG)pKeUnstackDetachProcess - gNtosModuleBase + (ULONG)gReloadModuleBase);
     if (szNtosFilePath){
         ExFreePool(szNtosFilePath);
     }

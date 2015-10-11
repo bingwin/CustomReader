@@ -7,7 +7,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Comm.c" />
     <ClCompile Include="FileSystem.c" />
     <ClCompile Include="Fixrelocation.c" />
     <ClCompile Include="KernelReload.c" />
@@ -18,7 +17,6 @@
     <ClCompile Include="Version.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Comm.h" />
     <ClInclude Include="CommStruct.h" />
     <ClInclude Include="CtrlCmd.h" />
     <ClInclude Include="FileSystem.h" />

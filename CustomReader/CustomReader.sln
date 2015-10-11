@@ -6,6 +6,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ctmrDll", "..\ctmrDll\ctmrD
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ctmrDllTest", "..\ctmrDllTest\ctmrDllTest.vcxproj", "{B171D1E1-BD76-41E7-935E-587E44A27BF2}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Testee", "..\Testee\Testee.vcxproj", "{BE88A91C-9DCB-459B-9E2D-7446A34A8630}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -31,6 +33,12 @@ Global
 		{B171D1E1-BD76-41E7-935E-587E44A27BF2}.Release|Win32.Build.0 = Release|Win32
 		{B171D1E1-BD76-41E7-935E-587E44A27BF2}.WinDDK|Win32.ActiveCfg = Release|Win32
 		{B171D1E1-BD76-41E7-935E-587E44A27BF2}.WinDDK|Win32.Build.0 = Release|Win32
+		{BE88A91C-9DCB-459B-9E2D-7446A34A8630}.Debug|Win32.ActiveCfg = Debug|Win32
+		{BE88A91C-9DCB-459B-9E2D-7446A34A8630}.Debug|Win32.Build.0 = Debug|Win32
+		{BE88A91C-9DCB-459B-9E2D-7446A34A8630}.Release|Win32.ActiveCfg = Release|Win32
+		{BE88A91C-9DCB-459B-9E2D-7446A34A8630}.Release|Win32.Build.0 = Release|Win32
+		{BE88A91C-9DCB-459B-9E2D-7446A34A8630}.WinDDK|Win32.ActiveCfg = Release|Win32
+		{BE88A91C-9DCB-459B-9E2D-7446A34A8630}.WinDDK|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

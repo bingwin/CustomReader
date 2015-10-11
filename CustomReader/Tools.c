@@ -64,16 +64,12 @@ NTSTATUS LookupProcessByName(IN CHAR *ProcessName,OUT PEPROCESS *Eprocess)
     CHAR szImageName[100]; 
     CHAR *szProcessName             = NULL;
 
-    if (KeGetCurrentIrql() > PASSIVE_LEVEL){
-        return STATUS_UNSUCCESSFUL;
-    }
-
     ulCurrentProcess    = (ULONG)PsGetCurrentProcess();
     ulNextProcess       = ulCurrentProcess;
     __try{
 
         memset(szImageName,0,sizeof(szImageName));
-        memcpy_s(szImageName,100,ProcessName,16);
+        memcpy(szImageName,ProcessName,16);
         do {
             if ((ulCount >= 1) && (ulNextProcess == ulCurrentProcess)){
                 status = STATUS_NOT_FOUND;
@@ -92,11 +88,17 @@ NTSTATUS LookupProcessByName(IN CHAR *ProcessName,OUT PEPROCESS *Eprocess)
             ulCount++;
         } while (TRUE);
     }
-    __except(EXCEPTION_EXECUTE_HANDLER)
-    {
+    __except(EXCEPTION_EXECUTE_HANDLER){
         status = STATUS_NOT_FOUND;
     }
     return status;
+}
+
+BYTE *GetExportedFunctionAddr(WCHAR *FunctionName)
+{
+    UNICODE_STRING uniFunctionName = {0};
+    RtlInitUnicodeString(&uniFunctionName,FunctionName);
+    return (BYTE*)MmGetSystemRoutineAddress(&uniFunctionName);
 }
 
 
