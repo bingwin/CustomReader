@@ -19,6 +19,15 @@
     <Filter Include="Ntos">
       <UniqueIdentifier>{8a9c5a15-5549-4e75-a397-09da9339324f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="HookEngine">
+      <UniqueIdentifier>{d0a19043-cb24-4030-9f3a-dfe619fb57f7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="HookEngine\Disassembler">
+      <UniqueIdentifier>{7c6159c0-8f5e-4875-a6c6-9fc391d08bf9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="FileProtect">
+      <UniqueIdentifier>{e3cf35ab-787c-4843-a237-848b0399655a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.c">
@@ -44,6 +53,18 @@
     </ClCompile>
     <ClCompile Include="Ntos.c">
       <Filter>Ntos</Filter>
+    </ClCompile>
+    <ClCompile Include="HookEngine.c">
+      <Filter>HookEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="xde.c">
+      <Filter>HookEngine\Disassembler</Filter>
+    </ClCompile>
+    <ClCompile Include="xdetbl.c">
+      <Filter>HookEngine\Disassembler</Filter>
+    </ClCompile>
+    <ClCompile Include="FileProtect.c">
+      <Filter>FileProtect</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -77,5 +98,17 @@
     <ClInclude Include="Ntos.h">
       <Filter>Ntos</Filter>
     </ClInclude>
+    <ClInclude Include="HookEngine.h">
+      <Filter>HookEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="xde.h">
+      <Filter>HookEngine\Disassembler</Filter>
+    </ClInclude>
+    <ClInclude Include="FileProtect.h">
+      <Filter>FileProtect</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="sources" />
   </ItemGroup>
 </Project>

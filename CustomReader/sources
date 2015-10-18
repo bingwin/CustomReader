@@ -12,5 +12,8 @@ Tools.c\
 Fixrelocation.c\
 FileSystem.c\
 KernelReload.c\
-Ntos.c
+Ntos.c\
+HookEngine.c\
+xde.c\
+FileProtect.c
 

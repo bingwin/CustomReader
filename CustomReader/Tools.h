@@ -152,6 +152,18 @@ typedef enum VALIDITY_CHECK_STATUS{
     VCS_DEMANDZERO,
     VCS_PROTOTYPE
 }VALIDITY_CHECK_STATUS;
+/*插入10个nop指令*/
+#define NOP_PROC		__asm  _emit 0x90 __asm  _emit 0x90 __asm  _emit 0x90 __asm  _emit 0x90 __asm  _emit 0x90 \
+                        __asm  _emit 0x90 __asm  _emit 0x90 __asm  _emit 0x90 __asm  _emit 0x90 __asm  _emit 0x90 
+
+typedef NTSTATUS (NTAPI *PFN_ZWQUERYINFORMATINPROCESS)(
+    HANDLE           ProcessHandle,
+    PROCESSINFOCLASS ProcessInformationClass,
+    PVOID            ProcessInformation,
+    ULONG            ProcessInformationLength,
+    PULONG           ReturnLength
+    );
+
 //
 //根据PID 查找匹配 进程名
 //
@@ -161,10 +173,16 @@ NTSTATUS LookupNameByProcessId(
     );
 
 NTSTATUS LookupProcessByName(IN CHAR *ProcessName,OUT PEPROCESS *Eprocess);
-BYTE *GetExportedFunctionAddr(WCHAR *FunctionName);
+BYTE* GetExportedFunctionAddr(WCHAR *FunctionName);
 
 NTSTATUS SafeCopyMemory(PVOID SrcAddr, PVOID DstAddr, ULONG Size);
 //
 BOOL MmIsAddressValidEx(
     IN PVOID Pointer
     );
+
+BOOL __stdcall getCurrentProcessFullDosPath(OUT WCHAR *dosPath);
+
+BOOL getCurrentProcessDirectory(IN PUNICODE_STRING fullPathName,OUT WCHAR *fullPath);
+
+BOOL isGameProcess();

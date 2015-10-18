@@ -585,6 +585,8 @@ BOOL _stdcall InitCustomReader()
     }
     OutputDebugStringA("ReleaseResToFile ok!\r\n");
     Sleep(100);
+    //先卸载驱动
+    UnloadDriver(CTMR_NAME);
     /*加载驱动、测试通信*/
     if(!LoadDriver(CTMR_NAME,CTMR_PATH)){
         /*删除驱动文件*/

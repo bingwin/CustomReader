@@ -3,6 +3,9 @@
 
 #include <ntddk.h>
 #include <ntimage.h>
+#include <ntstrsafe.h>
+
+#define  MAX_PATH 260
 
 typedef unsigned char  BOOL, *PBOOL;
 typedef unsigned char  BYTE, *PBYTE;

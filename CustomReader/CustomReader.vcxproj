@@ -7,26 +7,36 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="FileProtect.c" />
     <ClCompile Include="FileSystem.c" />
     <ClCompile Include="Fixrelocation.c" />
+    <ClCompile Include="HookEngine.c" />
     <ClCompile Include="KernelReload.c" />
     <ClCompile Include="LogSystem.c" />
     <ClCompile Include="main.c" />
     <ClCompile Include="Ntos.c" />
     <ClCompile Include="Tools.c" />
     <ClCompile Include="Version.c" />
+    <ClCompile Include="xde.c" />
+    <ClCompile Include="xdetbl.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommStruct.h" />
     <ClInclude Include="CtrlCmd.h" />
+    <ClInclude Include="FileProtect.h" />
     <ClInclude Include="FileSystem.h" />
     <ClInclude Include="Fixrelocation.h" />
+    <ClInclude Include="HookEngine.h" />
     <ClInclude Include="KernelReload.h" />
     <ClInclude Include="LogSystem.h" />
     <ClInclude Include="Ntos.h" />
     <ClInclude Include="Tools.h" />
     <ClInclude Include="Utils.h" />
     <ClInclude Include="Version.h" />
+    <ClInclude Include="xde.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="sources" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{4EE67C57-BE79-4CD7-B3B0-94AECE62DB41}</ProjectGuid>

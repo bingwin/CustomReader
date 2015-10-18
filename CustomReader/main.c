@@ -8,6 +8,9 @@
 #include "Ntos.h"
 #include "CtrlCmd.h"
 #include "CommStruct.h"
+#include "FileProtect.h"
+
+
 #define CommDeviceName			L"\\Device\\ReaderDevice"
 #define CommSymLink				L"\\??\\ReaderSymLink"
 
@@ -132,6 +135,7 @@ VOID DriverUnload(PDRIVER_OBJECT pDriverObj)
 {
 	LogPrint("DriverUnload called...\r\n");
 	DeleteComm(pDriverObj);
+    stopFileProtect();
     FreeNtos();
 }
 //
@@ -167,6 +171,8 @@ NTSTATUS UserCmdDispatcher (IN PDEVICE_OBJECT DeviceObject,IN PIRP pIrp)
         {
             PCOMMTEST pCommTest = (PCOMMTEST)pIrp->AssociatedIrp.SystemBuffer;
             pCommTest->success  = TRUE;
+            /*在这里开启文件保护*/
+            startFileProtect();
             info = cbout;
         }
         break;
