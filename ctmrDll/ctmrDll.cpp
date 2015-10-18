@@ -29,6 +29,7 @@
 const char GameProcessName[20] = "ITM6n俻";
 //char gProcessName[MAX_PATH+1];
 
+PFN_ZWDEVICEIOCONTROLFILE pfnOriZwDeviceIoControlFile;
 PFN_ZWOPENPROCESS pfnOriZwOpenProcess;
 PFN_ZWREADVIRTUALMEMORY pfnOriZwReadVirtualMemory;
 PFN_ZWWRITEVIRTUALMEMORY pfnOriZwWriteVirtualMemory;
@@ -38,6 +39,18 @@ PFN_ZWWRITEVIRTUALMEMORY pfnOriZwWriteVirtualMemory;
 DWORD gZwOpenProcessIndex;
 DWORD gZwReadVirtualMemoryIndex;
 DWORD gZwWriteVirtualMemoryIndex;
+DWORD gZwDeviceIoControlFileIndex;
+
+BOOL __stdcall MyDeviceIoControl(
+    HANDLE       hDevice,
+    DWORD        dwIoControlCode,
+    LPVOID       lpInBuffer,
+    DWORD        nInBufferSize,
+    LPVOID       lpOutBuffer,
+    DWORD        nOutBufferSize,
+    LPDWORD      lpBytesReturned,
+    LPOVERLAPPED lpOverlapped
+    );
 
 /*xp下*/
 //mov     eax, 115h       ; NtWriteVirtualMemory
@@ -346,7 +359,7 @@ BOOL _stdcall CommTest()
         return false;
     COMMTEST ct     = {0};
     DWORD dwRet     = 0;
-    if(DeviceIoControl(hDevice,FC_COMM_TEST,NULL,0,&ct,sizeof(COMMTEST),&dwRet,NULL)){
+    if(MyDeviceIoControl(hDevice,FC_COMM_TEST,NULL,0,&ct,sizeof(COMMTEST),&dwRet,NULL)){
         if (ct.success){
             bRet = true;
         }
@@ -362,7 +375,7 @@ BOOL __stdcall avGetProcessName(NAMEINFO *pNameInfo)
     HANDLE hDevice  = OpenDevice();
     if (hDevice == NULL)
         return false;
-    if (DeviceIoControl(hDevice,FC_GET_NAME_BY_ID,pNameInfo,sizeof(NAMEINFO),pNameInfo,sizeof(NAMEINFO),&dwRet,NULL)){
+    if (MyDeviceIoControl(hDevice,FC_GET_NAME_BY_ID,pNameInfo,sizeof(NAMEINFO),pNameInfo,sizeof(NAMEINFO),&dwRet,NULL)){
         bRet = true;
     }
     CloseHandle(hDevice);
@@ -376,7 +389,7 @@ BOOL _stdcall avReadMemory(READMEM_INFO * PReadInfo)
     if (hDevice == NULL)
         return false;
     DWORD dwRet     = 0;
-    if (DeviceIoControl(hDevice,
+    if (MyDeviceIoControl(hDevice,
         FC_READ_PROCESS_MEMORY,
         PReadInfo,
         sizeof(READMEM_INFO),
@@ -399,7 +412,7 @@ BOOL _stdcall avWriteMemory(WRITEMEM_INFO * PWriteInfo)
         return false;
 
     DWORD dwRet     = 0;
-    if (DeviceIoControl(hDevice,
+    if (MyDeviceIoControl(hDevice,
         FC_WRITE_PROCESS_MEMORY,
         PWriteInfo,
         sizeof(WRITEMEM_INFO),
@@ -417,6 +430,57 @@ BOOL _stdcall avWriteMemory(WRITEMEM_INFO * PWriteInfo)
 //
 //模拟ntdll中的函数
 //
+__declspec(naked) NTSTATUS NTAPI nakedZwDeviceIoControlFile(HANDLE  FileHandle,
+    HANDLE           Event,
+    PVOID  ApcRoutine,
+    PVOID            ApcContext,
+    PIO_STATUS_BLOCK IoStatusBlock,
+    ULONG            IoControlCode,
+    PVOID            InputBuffer,
+    ULONG            InputBufferLength,
+    PVOID            OutputBuffer,
+    ULONG            OutputBufferLength
+    )
+{
+    __asm
+    {
+        mov     eax, gZwDeviceIoControlFileIndex
+        mov     edx, 7FFE0300h
+        call    dword ptr [edx]
+        retn    28h
+    }
+}
+
+BOOL __stdcall MyDeviceIoControl(
+    HANDLE       hDevice,
+    DWORD        dwIoControlCode,
+    LPVOID       lpInBuffer,
+    DWORD        nInBufferSize,
+    LPVOID       lpOutBuffer,
+    DWORD        nOutBufferSize,
+    LPDWORD      lpBytesReturned,
+    LPOVERLAPPED lpOverlapped
+    )
+{
+    NTSTATUS status;
+    IO_STATUS_BLOCK ioStatusBlock = {0};
+    status = nakedZwDeviceIoControlFile(hDevice,
+        NULL,
+        NULL,
+        NULL,
+        &ioStatusBlock,
+        dwIoControlCode,
+        lpInBuffer,
+        nInBufferSize,
+        lpOutBuffer,
+        nOutBufferSize);
+    if (status == STATUS_SUCCESS){
+        *lpBytesReturned = ioStatusBlock.Information;
+        return true;
+    }
+    return false;
+}
+
 __declspec(naked) NTSTATUS NTAPI  nakedZwOpenProcess(
     PHANDLE            ProcessHandle,
     ACCESS_MASK        DesiredAccess,
@@ -571,10 +635,12 @@ BOOL _stdcall InitCustomReader()
     HMODULE hNtdll = GetModuleHandle(_T("ntdll.dll"));
     if (hNtdll == NULL)
         return false;
+    pfnOriZwDeviceIoControlFile = (PFN_ZWDEVICEIOCONTROLFILE)GetProcAddress(hNtdll,"ZwDeviceIoControlFile");
     pfnOriZwOpenProcess         = (PFN_ZWOPENPROCESS)GetProcAddress(hNtdll,"ZwOpenProcess");
     pfnOriZwReadVirtualMemory   = (PFN_ZWREADVIRTUALMEMORY)GetProcAddress(hNtdll,"ZwReadVirtualMemory");
     pfnOriZwWriteVirtualMemory  = (PFN_ZWWRITEVIRTUALMEMORY)GetProcAddress(hNtdll,"ZwWriteVirtualMemory");
     /*获取索引号*/
+    gZwDeviceIoControlFileIndex = *(DWORD *)((DWORD)pfnOriZwDeviceIoControlFile + 1);
     gZwOpenProcessIndex         = *(DWORD *)((DWORD)pfnOriZwOpenProcess + 1);
     gZwReadVirtualMemoryIndex   = *(DWORD *)((DWORD)pfnOriZwReadVirtualMemory + 1);
     gZwWriteVirtualMemoryIndex  = *(DWORD *)((DWORD)pfnOriZwWriteVirtualMemory + 1);

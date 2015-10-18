@@ -21,6 +21,28 @@ typedef struct _CLIENT_ID{
 	HANDLE UniqueProcess;
 	HANDLE UniqueThread;
 } CLIENT_ID,*PCLIENT_ID;
+
+typedef struct _IO_STATUS_BLOCK {
+    union {
+        NTSTATUS Status;
+        PVOID Pointer;
+    } DUMMYUNIONNAME;
+
+    ULONG_PTR Information;
+} IO_STATUS_BLOCK, *PIO_STATUS_BLOCK;
+
+typedef NTSTATUS (NTAPI *PFN_ZWDEVICEIOCONTROLFILE)(
+      HANDLE           FileHandle,
+      HANDLE           Event,
+      PVOID  ApcRoutine,
+      PVOID            ApcContext,
+     PIO_STATUS_BLOCK IoStatusBlock,
+      ULONG            IoControlCode,
+      PVOID            InputBuffer,
+      ULONG            InputBufferLength,
+     PVOID            OutputBuffer,
+      ULONG            OutputBufferLength
+    );
 /*ZwOpenProcessº¯ÊýÖ¸Õë*/
 typedef NTSTATUS (NTAPI *PFN_ZWOPENPROCESS)(
 	    PHANDLE            ProcessHandle,
