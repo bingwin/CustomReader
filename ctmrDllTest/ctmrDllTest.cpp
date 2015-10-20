@@ -107,26 +107,26 @@ HANDLE OpenProcessByName(wchar_t * wszName)
 int _tmain(int argc, _TCHAR* argv[])
 {
     InitCustomReader();
-    //ULONG g1 = 0;
-    //ULONG g2 = 0;
-    //unsigned char buffer[100] ={0};
-    //if (PromotePrivileges()){
-    //    HANDLE handle = OpenProcessByName(L"DNF.exe");
-    //    printf("handle is : 0x%x\r\n",(DWORD)handle);
-    //    if (handle){
-    //        DWORD dwRet;
-    //        if (ReadProcessMemory(handle,(LPVOID)0x417030,&g1,4,&dwRet)){
-    //            printf("g1 : 0x%x\r\n",g1);
-    //        }
-    //        if (ReadProcessMemory(handle,(LPVOID)0x417034,&g2,4,&dwRet)){
-    //            printf("g2 : 0x%x\r\n",g2);
-    //        }
-    //        if (ReadProcessMemory(handle,(LPVOID)0x417038,&buffer,5,&dwRet)){
-    //            printf(", : %s\r\n",buffer);
-    //        }
+    ULONG g1 = 0;
+    ULONG g2 = 0;
+    unsigned char buffer[100] ={0};
+    if (PromotePrivileges()){
+        HANDLE handle = OpenProcessByName(L"DNF.exe");
+        printf("handle is : 0x%x\r\n",(DWORD)handle);
+        if (handle){
+            DWORD dwRet;
+            if (ReadProcessMemory(handle,(LPVOID)0x417000,&g1,4,&dwRet)){
+                printf("g1 : 0x%x\r\n",g1);
+            }
+            if (ReadProcessMemory(handle,(LPVOID)0x417004,&g2,4,&dwRet)){
+                printf("g2 : 0x%x\r\n",g2);
+            }
+            if (ReadProcessMemory(handle,(LPVOID)0x417008,&buffer,10,&dwRet)){
+                printf(", : %s\r\n",buffer);
+            }
 
-    //    }
-    //}
+        }
+    }
 
     system("pause");
     UnloadCustomReader();

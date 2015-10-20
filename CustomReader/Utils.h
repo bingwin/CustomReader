@@ -169,4 +169,14 @@ NTSTATUS __stdcall ZwQuerySystemInformation(
 
 typedef VOID (NTAPI *PFN_KESTACKATTACHPROCESS)(IN PKPROCESS 	Process,OUT PKAPC_STATE 	ApcState );	
 typedef VOID (NTAPI *PFN_KEUNSTACKDETACHPROCESS)(IN PKAPC_STATE ApcState)	;
+
+typedef NTSTATUS (NTAPI *PFN_MMCOPYVIRTUALMEMORY)(
+    IN PEPROCESS FromProcess,
+    IN CONST VOID *FromAddress,
+    IN PEPROCESS ToProcess,
+    OUT PVOID ToAddress,
+    IN SIZE_T BufferSize,
+    IN KPROCESSOR_MODE PreviousMode,
+    OUT PSIZE_T NumberOfBytesCopied
+    );
 #endif//_UTILS_H_

@@ -5,13 +5,14 @@
 //
 //通信相关结构
 //
-#pragma pack(push)
+//#pragma pack(push)
 #pragma pack(1)
 typedef struct tagCOMMTEST{
-	BOOL success;
+
     //ULONG ZwOpenProcessIndex;
     //ULONG ZwReadVirtualMemoryIndex;
     //ULONG ZwWriteVirtualMemoryIndex;
+    BOOL success;
 }COMMTEST,*PCOMMTEST;
 
 typedef struct tagNAMEINFO{
@@ -48,4 +49,5 @@ typedef struct tagWRITEMEM_INFO{
     DWORD  NumberOfBytesToWrite;
     DWORD  NumberOfBytesWritten;
 }WRITEMEM_INFO,*PWRITEMEM_INFO;
-#pragma pack(pop)
+//#pragma pack(pop)
+#pragma pack()

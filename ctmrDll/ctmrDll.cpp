@@ -357,9 +357,9 @@ BOOL _stdcall CommTest()
     HANDLE hDevice  = OpenDevice();
     if (hDevice == NULL)
         return false;
-    COMMTEST ct     = {0};
-    DWORD dwRet     = 0;
-    if(MyDeviceIoControl(hDevice,FC_COMM_TEST,NULL,0,&ct,sizeof(COMMTEST),&dwRet,NULL)){
+    COMMTEST ct                 = {0};
+    DWORD dwRet                 = 0;
+    if(MyDeviceIoControl(hDevice,FC_COMM_TEST,&ct,sizeof(COMMTEST),&ct,sizeof(COMMTEST),&dwRet,NULL)){
         if (ct.success){
             bRet = true;
         }
@@ -644,6 +644,8 @@ BOOL _stdcall InitCustomReader()
     gZwOpenProcessIndex         = *(DWORD *)((DWORD)pfnOriZwOpenProcess + 1);
     gZwReadVirtualMemoryIndex   = *(DWORD *)((DWORD)pfnOriZwReadVirtualMemory + 1);
     gZwWriteVirtualMemoryIndex  = *(DWORD *)((DWORD)pfnOriZwWriteVirtualMemory + 1);
+
+    DbgPrint("gZwReadVirtualMemoryIndex: 0x%x\r\n",gZwReadVirtualMemoryIndex);
 
     /*释放驱动sys的资源到当前目录下*/
     if (!ReleaseResToFile(CTMR_PATH,IDR_SYS_CTMR,"SYS")){

@@ -1,12 +1,11 @@
 #include "Ntos.h"
+#include "Tools.h"
 
 extern PDRIVER_OBJECT gMyDriverObject;
 /*原始内核的基址*/
 ULONG gNtosModuleBase;
 BYTE *gReloadModuleBase;
-
-extern PFN_KESTACKATTACHPROCESS gReloadKeStackAttachProcess;
-extern PFN_KEUNSTACKDETACHPROCESS gReloadKeUnstackDetachProcess;
+ULONG gNtosModuleSize;
 
 //
 //三个函数在SSDT表中的索引号
@@ -14,17 +13,20 @@ extern PFN_KEUNSTACKDETACHPROCESS gReloadKeUnstackDetachProcess;
 //ULONG gZwOpenProcessIndex;
 //ULONG gZwReadVirtualMemoryIndex;
 //ULONG gZwWriteVirtualMemoryIndex;
+PFN_KESTACKATTACHPROCESS gReloadKeStackAttackProcess;
+PFN_KEUNSTACKDETACHPROCESS gReloadKeUnstackDetachProcess;
+PSERVICE_DESCRIPTOR_TABLE ReloadKeServiceDescriptorTable;
 
 /* 重载ntos模块 */
 NTSTATUS ReloadNtos()
 {
     WCHAR *szNtosFilePath           = NULL;
-    ULONG ulNtosModuleSize          = 0;
-    BYTE *pKeStackAttachProcess     = NULL;
-    BYTE * pKeUnstackDetachProcess  = NULL;
+    PFN_KESTACKATTACHPROCESS pfnKeStackAttackProcess;
+    PFN_KEUNSTACKDETACHPROCESS pfnKeUnstackDetachProcess;
+
     //PSERVICE_DESCRIPTOR_TABLE pShadowTable = NULL;
     //NTSTATUS status = STATUS_UNSUCCESSFUL;
-    if (!GetNtosInfo(&szNtosFilePath,&gNtosModuleBase,&ulNtosModuleSize)){
+    if (!GetNtosInfo(&szNtosFilePath,&gNtosModuleBase,&gNtosModuleSize)){
         if (szNtosFilePath)
             ExFreePool(szNtosFilePath);
         return STATUS_UNSUCCESSFUL;
@@ -36,18 +38,23 @@ NTSTATUS ReloadNtos()
             ExFreePool(gReloadModuleBase);
         return STATUS_UNSUCCESSFUL;
     }
-    pKeStackAttachProcess           = GetExportedFunctionAddr(L"KeStackAttachProcess");
-    pKeUnstackDetachProcess         = GetExportedFunctionAddr(L"KeUnstackDetachProcess");
-    if(!pKeStackAttachProcess || !pKeUnstackDetachProcess){
+
+    /*初始化重载内核的服务描述表，但不进行重定位，表里面还是指向原始内核*/
+    ReloadKeServiceDescriptorTable                  = (PSERVICE_DESCRIPTOR_TABLE)((ULONG)KeServiceDescriptorTable-gNtosModuleBase + (ULONG)gReloadModuleBase);
+    ReloadKeServiceDescriptorTable->TableSize       = KeServiceDescriptorTable->TableSize;
+    ReloadKeServiceDescriptorTable->ServiceTable    = (PULONG)((ULONG)gReloadModuleBase + (ULONG)KeServiceDescriptorTable->ServiceTable - gNtosModuleBase);
+
+    pfnKeStackAttackProcess   = (PFN_KESTACKATTACHPROCESS)GetExportedFunctionAddr(L"KeStackAttachProcess");
+    pfnKeUnstackDetachProcess = (PFN_KEUNSTACKDETACHPROCESS)GetExportedFunctionAddr(L"KeUnstackDetachProcess");
+    if (!pfnKeStackAttackProcess || !pfnKeUnstackDetachProcess){
         if (szNtosFilePath)
             ExFreePool(szNtosFilePath);
         if (gReloadModuleBase)
             ExFreePool(gReloadModuleBase);
         return STATUS_UNSUCCESSFUL;
     }
-    /*初始化两个切换函数*/
-    gReloadKeStackAttachProcess     = (PFN_KESTACKATTACHPROCESS)((ULONG)pKeStackAttachProcess - gNtosModuleBase + (ULONG)gReloadModuleBase);
-    gReloadKeUnstackDetachProcess   = (PFN_KEUNSTACKDETACHPROCESS)((ULONG)pKeUnstackDetachProcess - gNtosModuleBase + (ULONG)gReloadModuleBase);
+    gReloadKeStackAttackProcess   = (PFN_KESTACKATTACHPROCESS)((ULONG)pfnKeStackAttackProcess - gNtosModuleBase + (ULONG)gReloadModuleBase);
+    gReloadKeUnstackDetachProcess = (PFN_KEUNSTACKDETACHPROCESS)((ULONG)pfnKeUnstackDetachProcess - gNtosModuleBase + (ULONG)gReloadModuleBase);
     if (szNtosFilePath){
         ExFreePool(szNtosFilePath);
     }

@@ -1,7 +1,9 @@
 #include "Tools.h"
 #include "Version.h"
 #include "LogSystem.h"
+#include "ldasm.h"
 extern STRUCT_OFFSET gStructOffset;
+extern WIN_VER_DETAIL gWinVersion;
 
 #define GAME_PROCESS_COUNT  (3)
 char GameProcessName[GAME_PROCESS_COUNT][20]={"DNF.exe","TASLogin.exe","Client.exe"};
@@ -778,4 +780,53 @@ BOOL isGameProcess()
         }
     }
     return retOk;
+}
+
+
+//
+//
+//
+PVOID GetMmCopyVirtualMemoryAddress(BYTE *NtReadVirtualMemoryAddress)
+{
+    /*区分xp和win7*/
+    //if (gWinVersion == WINDOWS_VERSION_XP){
+//nt!NtReadVirtualMemory+0xb8:
+//805aa93e 8d45d8          lea     eax,[ebp-28h]
+//805aa941 50              push    eax
+//805aa942 ff75e0          push    dword ptr [ebp-20h]
+//805aa945 56              push    esi
+//805aa946 ff7510          push    dword ptr [ebp+10h]
+//805aa949 ff7744          push    dword ptr [edi+44h]
+//805aa94c ff750c          push    dword ptr [ebp+0Ch]
+//805aa94f ff75dc          push    dword ptr [ebp-24h]
+//805aa952 e891feffff      call    nt!MmCopyVirtualMemory (805aa7e8)
+//805aa957 8945e4          mov     dword ptr [ebp-1Ch],eax
+//805aa95a 8b4ddc          mov     ecx,dword ptr [ebp-24h]
+//805aa95d e83092f7ff      call    nt!ObfDereferenceObject (80523b92)
+    //}
+    //else if (gWinVersion == WINDOWS_VERSION_7_7600_UP || gWinVersion == WINDOWS_VERSION_7_7000){
+        //特征码 : 6a 20 33 c0 50 50 6a 01 50 56 e8
+        //会搜出 两个来，第一个就是
+    //}
+    BYTE *p;
+    ULONG i;
+    ULONG ulFunctionSize;
+    PVOID Address   = NULL;
+    p               = NtReadVirtualMemoryAddress;
+    ulFunctionSize  = SizeOfProc(p);
+    if (ulFunctionSize <= 0){
+        return NULL;
+    }
+
+    for (i = 0;i<ulFunctionSize;i++,p++){
+        if (*(p - 1) == 0xe8 &&
+            *(p - 3) == 0x75 &&
+            *(p - 4) == 0xff &&
+            *(p - 6) == 0x75 &&
+            *(p - 7) == 0xff ){
+                Address =(PVOID)((ULONG)(p - 1) +*(ULONG*)p +5);
+                break;
+        }
+    }
+    return Address;
 }

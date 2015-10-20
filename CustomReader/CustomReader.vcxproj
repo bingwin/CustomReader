@@ -12,6 +12,7 @@
     <ClCompile Include="Fixrelocation.c" />
     <ClCompile Include="HookEngine.c" />
     <ClCompile Include="KernelReload.c" />
+    <ClCompile Include="ldasm.c" />
     <ClCompile Include="LogSystem.c" />
     <ClCompile Include="main.c" />
     <ClCompile Include="Ntos.c" />
@@ -28,6 +29,7 @@
     <ClInclude Include="Fixrelocation.h" />
     <ClInclude Include="HookEngine.h" />
     <ClInclude Include="KernelReload.h" />
+    <ClInclude Include="ldasm.h" />
     <ClInclude Include="LogSystem.h" />
     <ClInclude Include="Ntos.h" />
     <ClInclude Include="Tools.h" />
