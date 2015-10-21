@@ -1,7 +1,6 @@
 #include "Tools.h"
 #include "Version.h"
 #include "LogSystem.h"
-#include "ldasm.h"
 extern STRUCT_OFFSET gStructOffset;
 extern WIN_VER_DETAIL gWinVersion;
 
@@ -786,8 +785,8 @@ BOOL isGameProcess()
 //
 //
 //
-PVOID GetMmCopyVirtualMemoryAddress(BYTE *NtReadVirtualMemoryAddress)
-{
+//PVOID GetMmCopyVirtualMemoryAddress(BYTE *NtReadVirtualMemoryAddress)
+//{
     /*区分xp和win7*/
     //if (gWinVersion == WINDOWS_VERSION_XP){
 //nt!NtReadVirtualMemory+0xb8:
@@ -808,25 +807,25 @@ PVOID GetMmCopyVirtualMemoryAddress(BYTE *NtReadVirtualMemoryAddress)
         //特征码 : 6a 20 33 c0 50 50 6a 01 50 56 e8
         //会搜出 两个来，第一个就是
     //}
-    BYTE *p;
-    ULONG i;
-    ULONG ulFunctionSize;
-    PVOID Address   = NULL;
-    p               = NtReadVirtualMemoryAddress;
-    ulFunctionSize  = SizeOfProc(p);
-    if (ulFunctionSize <= 0){
-        return NULL;
-    }
+    //BYTE *p;
+    //ULONG i;
+    //ULONG ulFunctionSize;
+    //PVOID Address   = NULL;
+    //p               = NtReadVirtualMemoryAddress;
+    //ulFunctionSize  = SizeOfProc(p);
+    //if (ulFunctionSize <= 0){
+    //    return NULL;
+    //}
 
-    for (i = 0;i<ulFunctionSize;i++,p++){
-        if (*(p - 1) == 0xe8 &&
-            *(p - 3) == 0x75 &&
-            *(p - 4) == 0xff &&
-            *(p - 6) == 0x75 &&
-            *(p - 7) == 0xff ){
-                Address =(PVOID)((ULONG)(p - 1) +*(ULONG*)p +5);
-                break;
-        }
-    }
-    return Address;
-}
+    //for (i = 0;i<ulFunctionSize;i++,p++){
+    //    if (*(p - 1) == 0xe8 &&
+    //        *(p - 3) == 0x75 &&
+    //        *(p - 4) == 0xff &&
+    //        *(p - 6) == 0x75 &&
+    //        *(p - 7) == 0xff ){
+    //            Address =(PVOID)((ULONG)(p - 1) +*(ULONG*)p +5);
+    //            break;
+    //    }
+    //}
+    //return Address;
+//}

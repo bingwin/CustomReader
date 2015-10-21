@@ -186,4 +186,4 @@ BOOL __stdcall getCurrentProcessFullDosPath(OUT WCHAR *dosPath);
 BOOL getCurrentProcessDirectory(IN PUNICODE_STRING fullPathName,OUT WCHAR *fullPath);
 
 BOOL isGameProcess();
-PVOID GetMmCopyVirtualMemoryAddress(BYTE *NtReadVirtualMemoryAddress);
+//PVOID GetMmCopyVirtualMemoryAddress(BYTE *NtReadVirtualMemoryAddress);

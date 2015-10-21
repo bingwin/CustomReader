@@ -15,6 +15,5 @@ KernelReload.c\
 Ntos.c\
 HookEngine.c\
 xde.c\
-FileProtect.c\
-ldasm.c
+FileProtect.c
 

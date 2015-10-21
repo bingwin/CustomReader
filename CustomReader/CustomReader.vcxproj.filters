@@ -66,9 +66,6 @@
     <ClCompile Include="FileProtect.c">
       <Filter>FileProtect</Filter>
     </ClCompile>
-    <ClCompile Include="ldasm.c">
-      <Filter>HookEngine\Disassembler</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="LogSystem.h">
@@ -109,9 +106,6 @@
     </ClInclude>
     <ClInclude Include="FileProtect.h">
       <Filter>FileProtect</Filter>
-    </ClInclude>
-    <ClInclude Include="ldasm.h">
-      <Filter>HookEngine\Disassembler</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
