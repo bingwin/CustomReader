@@ -56,6 +56,49 @@ NTSTATUS LookupNameByProcessId(
     return status;
 }
 
+NTSTATUS LookupProcessByProcessId(
+    IN DWORD ProcessId,
+    OUT PEPROCESS *Eprocess
+    )
+{
+    NTSTATUS status                 = STATUS_UNSUCCESSFUL;
+    ULONG ulCount                   = 0;
+    PLIST_ENTRY	pActiveProcessList  = NULL;
+    ULONG ulCurrentProcess          = 0;
+    ULONG ulNextProcess             = 0;
+    ULONG ulPid                     = 0; 
+
+    if (KeGetCurrentIrql() > PASSIVE_LEVEL){
+        return STATUS_UNSUCCESSFUL;
+    }
+
+    ulCurrentProcess    = (ULONG)PsGetCurrentProcess();
+    ulNextProcess       = ulCurrentProcess;
+    __try{
+        do {
+            if ((ulCount >= 1) && (ulNextProcess == ulCurrentProcess)){
+                status = STATUS_NOT_FOUND;
+                break;
+            }
+            /*进程PID对比查找*/
+            ulPid       = *(ULONG *)(ulCurrentProcess + gStructOffset.EProcessUniqueProcessId);
+            if (ulPid == ProcessId){
+                *Eprocess = (PEPROCESS)ulCurrentProcess;
+                status  = STATUS_SUCCESS;
+                break;
+            }
+            pActiveProcessList = (PLIST_ENTRY)(ulCurrentProcess + gStructOffset.EProcessActiveProcessLinks);
+            ulCurrentProcess   = (ULONG)pActiveProcessList->Flink - gStructOffset.EProcessActiveProcessLinks;
+            ulCount++;
+        } while (TRUE);
+    }
+    __except(EXCEPTION_EXECUTE_HANDLER)
+    {
+        status = STATUS_NOT_FOUND;
+    }
+    return status;
+}
+
 //
 //根据进程名找到进程对象
 //

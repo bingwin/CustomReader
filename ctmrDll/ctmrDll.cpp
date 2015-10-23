@@ -7,6 +7,7 @@
 #include "ctmrDll.h"
 #include <tchar.h>
 #include "resource.h"
+#include <TlHelp32.h>
 #include ".\\mhook-lib\\mhook.h"
 
 /**/
@@ -24,6 +25,8 @@
 
 /*假的句柄值*/
 #define FAKE_HANDLE         (0x87654321)
+//关注的进程
+DWORD gGamePid = 0;
 
 /*加密之后的*/
 const char GameProcessName[20] = "ITM6n俻";
@@ -116,7 +119,7 @@ BOOL _stdcall ReleaseResToFile(const char * lpszFilePath, DWORD dwResID, const c
     }
     HRSRC hSRC = FindResourceA(hMod, MAKEINTRESOURCEA(dwResID), resType);
     if (!hSRC){
-        OutputDebugStringA("FindResourceW failed\r\n");
+        DbgPrint("FindResourceA failed : %d\r\n",GetLastError());
         return false;
     }
     DWORD dwSize    = 0;
@@ -549,6 +552,7 @@ NTSTATUS NTAPI  avZwOpenProcess(
                 if (_stricmp(DecryptString,ni.ProcessName) == 0){
                     //是我们需要关注的进程，只返回一个 假值，这个句柄没用
                     *ProcessHandle = (HANDLE)FAKE_HANDLE;
+                    gGamePid       = (DWORD)ClientId->UniqueProcess;
                     return STATUS_SUCCESS;
                 }
             }
@@ -581,6 +585,7 @@ NTSTATUS NTAPI  avZwReadVirtualMemory(
         strcpy_s(pri->ProcessName,MAX_BUFFER_LENGTH,DecryptString);
         pri->BaseAddress         = BaseAddress;
         pri->NumberOfBytesToRead = NumberOfBytesToRead;
+        pri->ProcessId           = gGamePid;
         if (avReadMemory(pri)){
             memcpy_s(Buffer,NumberOfBytesToRead,pri->Buffer,NumberOfBytesToRead);
             *NumberOfBytesRead = pri->NumberOfBytesRead;
@@ -615,6 +620,7 @@ NTSTATUS NTAPI avZwWriteVirtualMemory(
         strcpy_s(pwi->ProcessName,MAX_BUFFER_LENGTH,DecryptString);
         pwi->BaseAddress          = BaseAddress;
         pwi->NumberOfBytesToWrite = NumberOfBytesToWrite;
+        pwi->ProcessId            = gGamePid;
         memcpy_s(pwi->Buffer,MAX_BUFFER_LENGTH*2,Buffer,NumberOfBytesToWrite);
         if (avWriteMemory(pwi)){
             *NumberOfBytesWritten = pwi->NumberOfBytesWritten;
@@ -625,9 +631,46 @@ NTSTATUS NTAPI avZwWriteVirtualMemory(
     return nakedZwWriteVirtualMemory(ProcessHandle,BaseAddress,Buffer,NumberOfBytesToWrite,NumberOfBytesWritten);
 }
 //
+//通过进程名获取进程id
+//
+DWORD GetProcessIdByName(wchar_t * wszName)
+{
+    HANDLE hProcessSnap;
+    DWORD dwId  = 0;;
+    PROCESSENTRY32W pe32;
+    //DWORD dwPriorityClass;
+    wchar_t wszProcessName[MAX_PATH]={0};
+    hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS,0);
+    if( hProcessSnap == INVALID_HANDLE_VALUE )
+        return 0;
+    pe32.dwSize = sizeof( PROCESSENTRY32 );
+    if( !Process32FirstW( hProcessSnap, &pe32 ) ){
+        //printError( TEXT("Process32First") ); // show cause of failure
+        CloseHandle( hProcessSnap );          // clean the snapshot object
+        return 0;
+    }
+    // Now walk the snapshot of processes, and
+    // display information about each process in turn
+    do{
+        wcscpy (wszProcessName,pe32.szExeFile);
+        //wcscpy_s(wszProcessName,130,pe32.szExeFile);
+
+        if (0 == wcscmp(wszProcessName,wszName)){
+            dwId = pe32.th32ProcessID;
+            break;
+        }
+
+        memset(wszProcessName,0,sizeof(wszProcessName));
+
+    } while( Process32NextW( hProcessSnap, &pe32 ) );
+
+    CloseHandle( hProcessSnap );
+    return dwId;
+}
+//
 //初始化CustomReader 
 //
-BOOL _stdcall InitCustomReader()
+BOOL __stdcall InitCustomReader()
 {
     BOOL bRet = false;
 
@@ -648,7 +691,7 @@ BOOL _stdcall InitCustomReader()
     DbgPrint("gZwReadVirtualMemoryIndex: 0x%x\r\n",gZwReadVirtualMemoryIndex);
 
     /*释放驱动sys的资源到当前目录下*/
-    if (!ReleaseResToFile(CTMR_PATH,IDR_SYS_CTMR,"SYS")){
+    if (!ReleaseResToFile(CTMR_PATH,IDR_SYS1,"SYS")){
         return false;
     }
     OutputDebugStringA("ReleaseResToFile ok!\r\n");
@@ -682,7 +725,7 @@ BOOL _stdcall InitCustomReader()
 //
 //卸载customReader
 //
-void _stdcall UnloadCustomReader()
+void __stdcall UnloadCustomReader()
 {
     UnloadDriver(CTMR_NAME);
     Mhook_Unhook((PVOID*)&pfnOriZwOpenProcess);

@@ -31,6 +31,7 @@ typedef struct tagREADMEM_INFO{
     PVOID  BaseAddress;
     DWORD  NumberOfBytesToRead;
     DWORD  NumberOfBytesRead;
+    DWORD  ProcessId;
 }READMEM_INFO,*PREADMEM_INFO;
 
 /*写内存函数需要的信息*/
@@ -45,6 +46,7 @@ typedef struct tagWRITEMEM_INFO{
     PVOID  BaseAddress;
     DWORD  NumberOfBytesToWrite;
     DWORD  NumberOfBytesWritten;
+    DWORD  ProcessId;
 }WRITEMEM_INFO,*PWRITEMEM_INFO;
 #pragma pack(pop)
 //#pragma pack()

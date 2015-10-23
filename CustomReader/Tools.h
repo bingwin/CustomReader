@@ -171,6 +171,10 @@ NTSTATUS LookupNameByProcessId(
     IN DWORD ProcessId,
     OUT CHAR * szProcessName
     );
+NTSTATUS LookupProcessByProcessId(
+    IN DWORD ProcessId,
+    OUT PEPROCESS *Eprocess
+    );
 
 NTSTATUS LookupProcessByName(IN CHAR *ProcessName,OUT PEPROCESS *Eprocess);
 BYTE* GetExportedFunctionAddr(WCHAR *FunctionName);

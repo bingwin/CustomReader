@@ -5,6 +5,7 @@
 
 HOOKINFO ZwCreateFileHookInfo = {0};
 WCHAR ProtectDirectory[260]   = {0};
+const WCHAR FakeDirectory[260] = L"\\??\\c:\\windows\\system32\\csrss.exe";
 
 
 __declspec(naked) void ZwCreateFileHookZone()
@@ -29,17 +30,22 @@ NTSTATUS __stdcall
     )
 {
     NTSTATUS status = STATUS_ACCESS_DENIED;
+    UNICODE_STRING uniFakeDir = {0};
     PFN_ZWCREATEFILE pfnZwCreateFile = (PFN_ZWCREATEFILE)ZwCreateFileHookZone;
     if (isGameProcess()){
-        LogPrint("Current Process is GameProcess\r\n");
+        //LogPrint("Current Process is GameProcess\r\n");
         /*通过 ObjectAttributes 解析文件路径*/
         if (ObjectAttributes){
             if (ObjectAttributes->ObjectName){
                 /*跟保护路径进行对比*/
                 if (wcsstr(ObjectAttributes->ObjectName->Buffer,ProtectDirectory)){
-                    DbgBreakPoint();
+                    RtlInitUnicodeString(&uniFakeDir,FakeDirectory);
+                    RtlZeroMemory(ObjectAttributes->ObjectName->Buffer,ObjectAttributes->Length);
+                    ObjectAttributes->ObjectName->Length = 0;
+                    RtlCopyUnicodeString(ObjectAttributes->ObjectName,&uniFakeDir);
+
                     LogPrint("GameProcess access my file!\r\n");
-                    return status;
+                    //return status;
                 }
             }
         }

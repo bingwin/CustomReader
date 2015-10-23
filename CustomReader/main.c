@@ -21,7 +21,7 @@ extern PFN_KESTACKATTACHPROCESS gReloadKeStackAttackProcess;
 extern PFN_KEUNSTACKDETACHPROCESS gReloadKeUnstackDetachProcess;
 
 NTSTATUS __stdcall MyReadVirtualMemory(	
-    char 	    *ProcessName,
+    ULONG 	    ProcessId,
     PVOID 	    BaseAddress,
     PVOID 	    Buffer,
     SIZE_T 	    NumberOfBytesToRead,
@@ -44,23 +44,28 @@ NTSTATUS __stdcall MyReadVirtualMemory(
 
 
     if (NumberOfBytesToRead != 0){
-        status = LookupProcessByName(ProcessName,&targetProcess);
+        status = LookupProcessByProcessId(ProcessId,&targetProcess);
         if (status == STATUS_SUCCESS){
             gReloadKeStackAttackProcess((PKPROCESS)targetProcess,&apcState);
+            __try{
+                ProbeForRead(BaseAddress,NumberOfBytesToRead,1);
+                RtlCopyMemory(Buffer,BaseAddress,NumberOfBytesToRead);
 
-            RtlCopyMemory(Buffer,BaseAddress,NumberOfBytesToRead);
+            }__except(EXCEPTION_EXECUTE_HANDLER){
+                gReloadKeUnstackDetachProcess(&apcState);
+                return GetExceptionCode();
+            }
 
             gReloadKeUnstackDetachProcess(&apcState);
         }
     }
 
     *NumberOfBytesRead = NumberOfBytesToRead;
-
     return status;
 }
 
 NTSTATUS __stdcall MyWriteVirtualMemory(
-    char 	    *ProcessName,
+    ULONG       ProcessId,
     PVOID 	    BaseAddress,
     PVOID 	    Buffer,
     SIZE_T 	    NumberOfBytesToWrite,
@@ -80,12 +85,18 @@ NTSTATUS __stdcall MyWriteVirtualMemory(
 
 
     if (NumberOfBytesToWrite != 0){
-        status = LookupProcessByName(ProcessName,&targetProcess);
+        status = LookupProcessByProcessId(ProcessId,&targetProcess);
 
         if (status == STATUS_SUCCESS){
             gReloadKeStackAttackProcess((PKPROCESS)targetProcess,&apcState);
+            __try{
+                ProbeForWrite(BaseAddress,NumberOfBytesToWrite,1);
+                RtlCopyMemory(BaseAddress,Buffer,NumberOfBytesToWrite);
 
-            RtlCopyMemory(BaseAddress,Buffer,NumberOfBytesToWrite);
+            }__except(EXCEPTION_EXECUTE_HANDLER){
+                gReloadKeUnstackDetachProcess(&apcState);
+                return GetExceptionCode();
+            }
 
             gReloadKeUnstackDetachProcess(&apcState);
         }
@@ -218,7 +229,7 @@ NTSTATUS UserCmdDispatcher (IN PDEVICE_OBJECT DeviceObject,IN PIRP pIrp)
     case FC_READ_PROCESS_MEMORY:
         {
             PREADMEM_INFO pri   = (PREADMEM_INFO)pIrp->AssociatedIrp.SystemBuffer;
-            status  = MyReadVirtualMemory(pri->ProcessName,
+            status  = MyReadVirtualMemory(pri->ProcessId,
                 pri->BaseAddress,
                 pri->Buffer,
                 pri->NumberOfBytesToRead,
@@ -229,7 +240,7 @@ NTSTATUS UserCmdDispatcher (IN PDEVICE_OBJECT DeviceObject,IN PIRP pIrp)
     case FC_WRITE_PROCESS_MEMORY:
         {
             PWRITEMEM_INFO pwi  = (PWRITEMEM_INFO)pIrp->AssociatedIrp.SystemBuffer;
-                status  = MyWriteVirtualMemory(pwi->ProcessName,
+                status  = MyWriteVirtualMemory(pwi->ProcessId,
                     pwi->BaseAddress,
                     pwi->Buffer,
                     pwi->NumberOfBytesToWrite,
@@ -265,7 +276,7 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT pDriverObj,PUNICODE_STRING pRegisterPath)
     pDriverObj->MajorFunction[IRP_MJ_WRITE]             = CommDispatcher;
     pDriverObj->MajorFunction[IRP_MJ_DEVICE_CONTROL]    = UserCmdDispatcher;
 
-    DbgBreakPoint();
+    //DbgBreakPoint();
 	/*初始化系统版本和相关结构的偏移硬编码*/
 	InitStructOffset();
 
