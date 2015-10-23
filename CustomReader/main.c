@@ -173,7 +173,7 @@ NTSTATUS SetupComm(PDRIVER_OBJECT pDriverObj)
 VOID DriverUnload(PDRIVER_OBJECT pDriverObj)
 {
 	LogPrint("DriverUnload called...\r\n");
-	DeleteComm(pDriverObj);
+    DeleteComm(pDriverObj);
     stopFileProtect();
     FreeNtos();
 }
@@ -276,7 +276,7 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT pDriverObj,PUNICODE_STRING pRegisterPath)
     pDriverObj->MajorFunction[IRP_MJ_WRITE]             = CommDispatcher;
     pDriverObj->MajorFunction[IRP_MJ_DEVICE_CONTROL]    = UserCmdDispatcher;
 
-    //DbgBreakPoint();
+    DbgBreakPoint();
 	/*初始化系统版本和相关结构的偏移硬编码*/
 	InitStructOffset();
 

@@ -25,9 +25,6 @@
       <Filter>ctmrDll</Filter>
     </ClInclude>
     <ClInclude Include="targetver.h" />
-    <ClInclude Include="resource.h">
-      <Filter>资源文件</Filter>
-    </ClInclude>
     <ClInclude Include="mhook-lib\mhook.h">
       <Filter>mhook</Filter>
     </ClInclude>
@@ -46,7 +43,7 @@
     <ClInclude Include="disasm-lib\misc.h">
       <Filter>mhook</Filter>
     </ClInclude>
-    <ClInclude Include="resource1.h">
+    <ClInclude Include="resource.h">
       <Filter>stdafx</Filter>
     </ClInclude>
   </ItemGroup>
@@ -81,8 +78,5 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\CustomReader\win32debug\i386\CustomReader.sys" />
-    <None Include="sys2.bin">
-      <Filter>资源文件</Filter>
-    </None>
   </ItemGroup>
 </Project>

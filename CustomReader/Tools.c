@@ -872,3 +872,69 @@ BOOL isGameProcess()
     //}
     //return Address;
 //}
+
+BOOLEAN ValidateUnicodeString(PUNICODE_STRING usStr)
+{
+    ULONG i;
+
+    __try
+    {
+        if (!MmIsAddressValid(usStr))
+        {
+            return FALSE;
+        }
+        if (usStr->Buffer == NULL || usStr->Length == 0)
+        {
+            return FALSE;
+        }
+        for (i = 0; i < usStr->Length; i++)
+        {
+            if (!MmIsAddressValid((PUCHAR)usStr->Buffer + i))
+            {
+                return FALSE;
+            }
+        }
+
+    }__except(EXCEPTION_EXECUTE_HANDLER){
+
+    }
+    return TRUE;
+}
+
+BOOL myRtlStrUnicodeString(PUNICODE_STRING src,PUNICODE_STRING sub)
+{
+    PWSTR p1;
+    PWSTR pSrcTail;
+    PWSTR pSubTail;
+    ULONG srcLength;
+    ULONG subLength;
+    if(!src || !sub)
+        return FALSE;
+    if (src->Length == 0){
+        return FALSE;
+    }
+    if(sub->Length == 0)
+        return TRUE;
+
+    p1 = src->Buffer;
+    srcLength = src->Length >> 1;
+    subLength = sub->Length >> 1;
+    pSrcTail  = src->Buffer + srcLength - 1;
+    pSubTail  = sub->Buffer + subLength - 1;
+
+    while(p1 <= pSrcTail){
+        PWSTR s1;
+        PWSTR s2;
+        s1 = p1;
+        s2 = sub->Buffer;
+        while(s1 <= pSrcTail && s2 <= pSubTail && !(*s1 - * s2)){
+            s1++;
+            s2++;
+        }
+        if (s2 > pSubTail){
+            return TRUE;
+        }
+        p1++;
+    }
+    return FALSE;
+}

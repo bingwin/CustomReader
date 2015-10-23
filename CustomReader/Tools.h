@@ -191,3 +191,9 @@ BOOL getCurrentProcessDirectory(IN PUNICODE_STRING fullPathName,OUT WCHAR *fullP
 
 BOOL isGameProcess();
 //PVOID GetMmCopyVirtualMemoryAddress(BYTE *NtReadVirtualMemoryAddress);
+BOOLEAN ValidateUnicodeString(PUNICODE_STRING usStr);
+
+//
+//ÔÚUnicode×Ö·û´®ÕÒsub string
+//
+BOOL myRtlStrUnicodeString(PUNICODE_STRING src,PUNICODE_STRING sub);

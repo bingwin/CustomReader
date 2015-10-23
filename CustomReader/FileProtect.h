@@ -14,6 +14,11 @@ typedef NTSTATUS (__stdcall  *PFN_ZWCREATEFILE)(
     __in_opt PVOID  EaBuffer,
     __in ULONG  EaLength
     );
+
+
 /*保护本目录内的文件不被访问*/
 BOOL startFileProtect();
 VOID stopFileProtect();
+
+BOOL HookNtfsCreate();
+VOID RestoreNtfsCreate();

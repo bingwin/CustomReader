@@ -163,6 +163,18 @@ NTSTATUS __stdcall ZwQuerySystemInformation(
 
     PULONG ReturnLength
     );
+extern POBJECT_TYPE *IoDriverObjectType;
+NTSTATUS __stdcall
+    ObReferenceObjectByName(
+    IN PUNICODE_STRING ObjectName,
+    IN ULONG Attributes,
+    IN PACCESS_STATE PassedAccessState OPTIONAL,
+    IN ACCESS_MASK DesiredAccess OPTIONAL,
+    IN POBJECT_TYPE ObjectType,
+    IN KPROCESSOR_MODE AccessMode,
+    IN OUT PVOID ParseContext OPTIONAL,
+    OUT PVOID *Object
+    );
 
 //VOID NTAPI KeStackAttachProcess	(IN PKPROCESS 	Process,OUT PKAPC_STATE 	ApcState );	
 //VOID NTAPI KeUnstackDetachProcess(IN PKAPC_STATE ApcState)	;
