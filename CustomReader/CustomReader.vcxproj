@@ -15,6 +15,7 @@
     <ClCompile Include="LogSystem.c" />
     <ClCompile Include="main.c" />
     <ClCompile Include="Ntos.c" />
+    <ClCompile Include="ProcessProtect.c" />
     <ClCompile Include="Tools.c" />
     <ClCompile Include="Version.c" />
     <ClCompile Include="xde.c" />
@@ -30,6 +31,7 @@
     <ClInclude Include="KernelReload.h" />
     <ClInclude Include="LogSystem.h" />
     <ClInclude Include="Ntos.h" />
+    <ClInclude Include="ProcessProtect.h" />
     <ClInclude Include="Tools.h" />
     <ClInclude Include="Utils.h" />
     <ClInclude Include="Version.h" />

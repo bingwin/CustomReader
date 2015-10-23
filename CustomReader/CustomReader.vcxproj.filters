@@ -28,6 +28,9 @@
     <Filter Include="FileProtect">
       <UniqueIdentifier>{e3cf35ab-787c-4843-a237-848b0399655a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ProcessProtect">
+      <UniqueIdentifier>{fbad98bb-8346-4fd6-9e3c-daf264cced2d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.c">
@@ -65,6 +68,9 @@
     </ClCompile>
     <ClCompile Include="FileProtect.c">
       <Filter>FileProtect</Filter>
+    </ClCompile>
+    <ClCompile Include="ProcessProtect.c">
+      <Filter>ProcessProtect</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -106,6 +112,9 @@
     </ClInclude>
     <ClInclude Include="FileProtect.h">
       <Filter>FileProtect</Filter>
+    </ClInclude>
+    <ClInclude Include="ProcessProtect.h">
+      <Filter>ProcessProtect</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
