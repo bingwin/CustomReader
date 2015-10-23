@@ -9,13 +9,17 @@
 #include "CtrlCmd.h"
 #include "CommStruct.h"
 #include "FileProtect.h"
+#include "ProcessProtect.h"
 
 
 #define CommDeviceName			L"\\Device\\ReaderDevice"
 #define CommSymLink				L"\\??\\ReaderSymLink"
 
-
+PEPROCESS ProtectProcess;
 PDRIVER_OBJECT gMyDriverObject;
+
+BOOL bStartFileProtect = FALSE;
+BOOL bStartProcessProtect = FALSE;
 
 extern PFN_KESTACKATTACHPROCESS gReloadKeStackAttackProcess;
 extern PFN_KEUNSTACKDETACHPROCESS gReloadKeUnstackDetachProcess;
@@ -174,7 +178,11 @@ VOID DriverUnload(PDRIVER_OBJECT pDriverObj)
 {
 	LogPrint("DriverUnload called...\r\n");
     DeleteComm(pDriverObj);
-    stopFileProtect();
+    if (bStartFileProtect)
+        stopFileProtect();
+    if (bStartProcessProtect)
+        StopProcessProtect();
+
     FreeNtos();
 }
 //
@@ -211,8 +219,10 @@ NTSTATUS UserCmdDispatcher (IN PDEVICE_OBJECT DeviceObject,IN PIRP pIrp)
             PCOMMTEST pCommTest = (PCOMMTEST)pIrp->AssociatedIrp.SystemBuffer;
 
             pCommTest->success  = TRUE;
+            ProtectProcess = PsGetCurrentProcess();
             /*在这里开启文件保护*/
-            startFileProtect();
+            bStartFileProtect    = startFileProtect();
+            bStartProcessProtect = StartProcessProtect();
             info = cbout;
         }
         break;
@@ -276,7 +286,7 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT pDriverObj,PUNICODE_STRING pRegisterPath)
     pDriverObj->MajorFunction[IRP_MJ_WRITE]             = CommDispatcher;
     pDriverObj->MajorFunction[IRP_MJ_DEVICE_CONTROL]    = UserCmdDispatcher;
 
-    DbgBreakPoint();
+    //DbgBreakPoint();
 	/*初始化系统版本和相关结构的偏移硬编码*/
 	InitStructOffset();
 

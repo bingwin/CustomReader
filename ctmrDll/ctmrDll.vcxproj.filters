@@ -78,5 +78,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\CustomReader\win32debug\i386\CustomReader.sys" />
+    <None Include="sys2.bin">
+      <Filter>资源文件</Filter>
+    </None>
   </ItemGroup>
 </Project>

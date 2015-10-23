@@ -4,8 +4,8 @@
 extern STRUCT_OFFSET gStructOffset;
 extern WIN_VER_DETAIL gWinVersion;
 
-#define GAME_PROCESS_COUNT  (3)
-char GameProcessName[GAME_PROCESS_COUNT][20]={"DNF.exe","TASLogin.exe","Client.exe"};
+#define GAME_PROCESS_COUNT  (4)
+char GameProcessName[GAME_PROCESS_COUNT][20]={"TenSafe_1.exe","DNF.exe","TASLogin.exe","Client.exe"};
 //
 //根据PID 查找匹配 进程名
 //

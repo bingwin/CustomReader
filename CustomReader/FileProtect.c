@@ -8,6 +8,7 @@ WCHAR ProtectDirectory[260]   = {0};
 const WCHAR FakeDirectory[260] = L"\\??\\c:\\windows\\system32\\csrss.exe";
 
 PDRIVER_DISPATCH gOriginNtfsCreateDispatch;
+PDRIVER_DISPATCH gOriginNtfsReadDispatch;
 
 
 __declspec(naked) void ZwCreateFileHookZone()
@@ -112,7 +113,52 @@ _FunctionRet:
 
 }
 
-BOOL HookNtfsCreate()
+NTSTATUS __stdcall NtfsReadDispatch(
+    IN PDEVICE_OBJECT		DeviceObject,
+    IN PIRP					Irp
+    )
+{
+    //变量的声明
+    NTSTATUS status                     = STATUS_UNSUCCESSFUL;
+    PIO_STACK_LOCATION IoStackLocation  = NULL;
+    PFILE_OBJECT FileObject             = NULL;
+    UNICODE_STRING ProtectDir           = {0};
+
+    if (KeGetCurrentIrql() == PASSIVE_LEVEL){
+        if (isGameProcess()){
+            //进入到这个例程之后，因为我们是要关注文件
+            IoStackLocation = IoGetCurrentIrpStackLocation(Irp);
+
+            if (!IoStackLocation){
+                //我们就直接调用原始
+                //这里就是刚才为什么要保存原始函数的原因
+                goto _FunctionRet;
+            }
+            //取出这个文件对象成员
+            //我们关心的是  +0x030 FileName         : _UNICODE_STRING
+            FileObject = IoStackLocation->FileObject;
+            if (FileObject == NULL){
+                //如果文件对象为空，那么我们就直接返回原始函数
+                goto _FunctionRet;
+            }
+            if (ValidateUnicodeString(&FileObject->FileName)){
+                //查找是否时我们的目录
+                RtlInitUnicodeString(&ProtectDir,ProtectDirectory);
+                if (myRtlStrUnicodeString(&FileObject->FileName,&ProtectDir)){
+                    //返回 失败
+                    return STATUS_UNSUCCESSFUL;
+                }
+            }
+        }
+    }
+_FunctionRet:
+    //调用原始函数
+    status = gOriginNtfsReadDispatch(DeviceObject,Irp);
+    return status;
+
+}
+
+BOOL HookNtfsCreateRead()
 {
     NTSTATUS status;
     UNICODE_STRING uniNtfsName = {0};
@@ -134,13 +180,15 @@ BOOL HookNtfsCreate()
 
     /*替换create函数*/
     gOriginNtfsCreateDispatch = NtfsDriverObject->MajorFunction[IRP_MJ_CREATE];
+    gOriginNtfsReadDispatch   = NtfsDriverObject->MajorFunction[IRP_MJ_READ];
     NtfsDriverObject->MajorFunction[IRP_MJ_CREATE] = (PDRIVER_DISPATCH)NtfsCreateDispatch;
+    NtfsDriverObject->MajorFunction[IRP_MJ_READ]   = (PDRIVER_DISPATCH)NtfsReadDispatch;
     ObDereferenceObject(NtfsDriverObject);
     return TRUE;
 }
 
 
-VOID RestoreNtfsCreate()
+VOID RestoreNtfsCreateRead()
 {
     NTSTATUS status;
     UNICODE_STRING uniNtfsName = {0};
@@ -162,6 +210,7 @@ VOID RestoreNtfsCreate()
 
     /*恢复原始函数*/
     NtfsDriverObject->MajorFunction[IRP_MJ_CREATE] = gOriginNtfsCreateDispatch;
+    NtfsDriverObject->MajorFunction[IRP_MJ_READ]   = gOriginNtfsReadDispatch;
     ObDereferenceObject(NtfsDriverObject);
 }
 
@@ -186,7 +235,7 @@ BOOL startFileProtect()
     LogPrint("ProtectDirectory: %ws\r\n",ProtectDirectory);
     
     /*hook fsd create*/
-    isOk = HookNtfsCreate();
+    isOk = HookNtfsCreateRead();
     if (!isOk)
         LogPrint("HookNtfsCreate failed...\r\n");
     return isOk;
@@ -194,5 +243,5 @@ BOOL startFileProtect()
 
 VOID stopFileProtect()
 {
-    RestoreNtfsCreate();
+    RestoreNtfsCreateRead();
 }
