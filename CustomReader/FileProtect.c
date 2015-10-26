@@ -3,7 +3,7 @@
 #include "HookEngine.h"
 #include "LogSystem.h"
 
-HOOKINFO ZwCreateFileHookInfo = {0};
+HOOKINFO NtCreateFileHookInfo = {0};
 WCHAR ProtectDirectory[260]   = {0};
 const WCHAR FakeDirectory[260] = L"\\??\\c:\\windows\\system32\\csrss.exe";
 
@@ -14,7 +14,7 @@ PDRIVER_DISPATCH gOriginNtfsReadDispatch;
 __declspec(naked) void ZwCreateFileHookZone()
 {
     NOP_PROC;
-    __asm jmp [ZwCreateFileHookInfo.retAddress];
+    __asm jmp [NtCreateFileHookInfo.retAddress];
 }
 /*代理函数*/
 NTSTATUS __stdcall 
@@ -42,13 +42,13 @@ NTSTATUS __stdcall
             if (ObjectAttributes->ObjectName){
                 /*跟保护路径进行对比*/
                 if (wcsstr(ObjectAttributes->ObjectName->Buffer,ProtectDirectory)){
-                    RtlInitUnicodeString(&uniFakeDir,FakeDirectory);
-                    RtlZeroMemory(ObjectAttributes->ObjectName->Buffer,ObjectAttributes->Length);
-                    ObjectAttributes->ObjectName->Length = 0;
-                    RtlCopyUnicodeString(ObjectAttributes->ObjectName,&uniFakeDir);
+//                     RtlInitUnicodeString(&uniFakeDir,FakeDirectory);
+//                     RtlZeroMemory(ObjectAttributes->ObjectName->Buffer,ObjectAttributes->Length);
+//                     ObjectAttributes->ObjectName->Length = 0;
+//                     RtlCopyUnicodeString(ObjectAttributes->ObjectName,&uniFakeDir);
 
                     LogPrint("GameProcess access my file!\r\n");
-                    //return status;
+                    return STATUS_INVALID_PARAMETER;
                 }
             }
         }
@@ -64,6 +64,40 @@ NTSTATUS __stdcall
                             CreateOptions,
                             EaBuffer,EaLength);
 }
+
+//
+//
+//
+BOOL HookNtCreateFile()
+{
+    BOOL bRetOk = FALSE;
+
+    ULONG ulNtCreateFileAddr;
+    ulNtCreateFileAddr = (ULONG)GetExportedFunctionAddr(L"NtCreateFile");
+
+    if(ulNtCreateFileAddr == 0)
+        return FALSE;
+    /*填充结构体*/
+    NtCreateFileHookInfo.originAddress = ulNtCreateFileAddr;
+    NtCreateFileHookInfo.targetAddress = (ULONG)NewZwCreateFile;
+    NtCreateFileHookInfo.hookZone      = ZwCreateFileHookZone;
+
+    bRetOk = setInlineHook(&NtCreateFileHookInfo);
+    if (!bRetOk)
+        LogPrint("HookNtCreateFile failed\r\n");
+    return bRetOk;
+}
+
+
+VOID UnhookNtCreateFile()
+{
+
+    removeInlineHook(&NtCreateFileHookInfo);
+
+}
+
+
+
 
 //
 //要替换的ntfs的create函数
@@ -214,7 +248,7 @@ VOID RestoreNtfsCreateRead()
     ObDereferenceObject(NtfsDriverObject);
 }
 
-/*保护本目录内的文件不被访问*/
+/*保护本目录内的文件不被访问，在当前进程下环境下运行*/
 BOOL startFileProtect()
 {
     BOOL isOk                 = FALSE;
@@ -231,17 +265,18 @@ BOOL startFileProtect()
     }
     
     /*去除盘符 ，如 c: 两个字符*/
-    wcscpy(ProtectDirectory,&tmpDir[0]+2);
+    //wcscpy(ProtectDirectory,&tmpDir[0]+2);
+    wcscpy(ProtectDirectory,&tmpDir[0]);
     LogPrint("ProtectDirectory: %ws\r\n",ProtectDirectory);
     
     /*hook fsd create*/
-    isOk = HookNtfsCreateRead();
+    isOk = HookNtCreateFile();
     if (!isOk)
-        LogPrint("HookNtfsCreate failed...\r\n");
+        LogPrint("HookNtCreateFile failed...\r\n");
     return isOk;
 }
 
 VOID stopFileProtect()
 {
-    RestoreNtfsCreateRead();
+    UnhookNtCreateFile();
 }

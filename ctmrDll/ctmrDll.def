@@ -2,5 +2,5 @@
 ;×÷Õß£ºvvLinker
 LIBRARY ctmrDll
 EXPORTS 
-InitCustomReader @ 1
+InitCustomReader
 UnloadCustomReader

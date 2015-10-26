@@ -670,7 +670,7 @@ DWORD GetProcessIdByName(wchar_t * wszName)
 //
 //初始化CustomReader 
 //
-BOOL __stdcall InitCustomReader()
+CTMR_API BOOL _cdecl InitCustomReader()
 {
     BOOL bRet = false;
 
@@ -701,11 +701,11 @@ BOOL __stdcall InitCustomReader()
     /*加载驱动、测试通信*/
     if(!LoadDriver(CTMR_NAME,CTMR_PATH)){
         /*删除驱动文件*/
-        //DeleteFileA(CTMR_PATH);
+        DeleteFileA(CTMR_PATH);
         return false;
     }
     /*删除驱动文件*/
-    //DeleteFileA(CTMR_PATH);
+    DeleteFileA(CTMR_PATH);
 
     if (!CommTest()){
         //卸载驱动
@@ -725,7 +725,7 @@ BOOL __stdcall InitCustomReader()
 //
 //卸载customReader
 //
-void __stdcall UnloadCustomReader()
+CTMR_API void _cdecl UnloadCustomReader()
 {
     UnloadDriver(CTMR_NAME);
     Mhook_Unhook((PVOID*)&pfnOriZwOpenProcess);

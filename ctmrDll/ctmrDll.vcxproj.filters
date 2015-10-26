@@ -81,5 +81,6 @@
     <None Include="sys2.bin">
       <Filter>资源文件</Filter>
     </None>
+    <None Include="ctmrDll.def" />
   </ItemGroup>
 </Project>
