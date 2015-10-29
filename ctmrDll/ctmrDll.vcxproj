@@ -109,12 +109,12 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="ctmrDll.rc" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="..\CustomReader\win32debug\i386\CustomReader.sys" />
     <None Include="ctmrDll.def" />
-    <None Include="sys2.bin" />
+    <None Include="sys1.bin" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="ctmrDll.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

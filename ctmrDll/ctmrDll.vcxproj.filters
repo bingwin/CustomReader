@@ -72,15 +72,15 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="ctmrDll.def" />
+    <None Include="sys1.bin">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\CustomReader\win32debug\i386\CustomReader.sys" />
+  </ItemGroup>
+  <ItemGroup>
     <ResourceCompile Include="ctmrDll.rc">
       <Filter>资源文件</Filter>
     </ResourceCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\CustomReader\win32debug\i386\CustomReader.sys" />
-    <None Include="sys2.bin">
-      <Filter>资源文件</Filter>
-    </None>
-    <None Include="ctmrDll.def" />
   </ItemGroup>
 </Project>
