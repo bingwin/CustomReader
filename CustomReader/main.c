@@ -18,8 +18,11 @@
 PEPROCESS ProtectProcess;
 PDRIVER_OBJECT gMyDriverObject;
 
-BOOL bStartFileProtect = FALSE;
-BOOL bStartProcessProtect = FALSE;
+HANDLE CsrssHandle          = NULL;
+DWORD GameProcessId         = 0;
+
+BOOL bStartFileProtect      = FALSE;
+BOOL bStartProcessProtect   = FALSE;
 
 extern PFN_KESTACKATTACHPROCESS gReloadKeStackAttackProcess;
 extern PFN_KEUNSTACKDETACHPROCESS gReloadKeUnstackDetachProcess;
@@ -258,6 +261,15 @@ NTSTATUS UserCmdDispatcher (IN PDEVICE_OBJECT DeviceObject,IN PIRP pIrp)
                     &pwi->NumberOfBytesWritten);
             info = NT_SUCCESS(status) ? cbout : 0;
     }
+        break;
+    case FC_SEND_OPEN_PROCESS_PARAMETER:
+        {
+            POPEN_PROCESS_PARAMETER popp = (POPEN_PROCESS_PARAMETER)pIrp->AssociatedIrp.SystemBuffer;
+            /*¼ÇÂ¼csrssµÄ¾ä±ú*/
+            CsrssHandle   = (HANDLE)popp->dwCsrssHandle;
+            GameProcessId = popp->dwGamePid;
+            info = 0;
+        }
         break;
     default:
         status  = STATUS_INVALID_VARIANT;

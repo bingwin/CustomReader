@@ -111,7 +111,6 @@
   <ItemGroup>
     <None Include="..\CustomReader\win32debug\i386\CustomReader.sys" />
     <None Include="ctmrDll.def" />
-    <None Include="sys2.bin" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="ctmrDll.rc" />

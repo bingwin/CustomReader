@@ -24,6 +24,8 @@
 
 #define FC_GET_NAME_BY_ID           CTRL_EXPRESSION(3)          //
 
+#define FC_SEND_OPEN_PROCESS_PARAMETER        CTRL_EXPRESSION(4)
+
 //
 //ÅÐ¶ÏÊÇ²»ÊÇÎ±¾ä±ú
 //

@@ -5,7 +5,10 @@
 
 HOOKINFO gObReferenceObjectByHandleInfo;
 HOOKINFO gObOpenObjectByPointerInfo;
+
 extern PEPROCESS ProtectProcess;
+extern HANDLE CsrssHandle;
+extern DWORD GameProcessId;
 
 __declspec(naked)VOID ObReferenceObjectByHandleZone()
 {
@@ -31,13 +34,16 @@ NTSTATUS
 
     /*先判断是不是我的进程在使用游戏进程的句柄*/
     if (PsGetCurrentProcess() == ProtectProcess){
-        if (IS_MY_HANDLE(Handle)){
-            DWORD dwGamePid = MY_HANDLE_TO_PID(Handle);
+        if (Handle == CsrssHandle){
+
+            /*证明是自己要操作游戏进程内存*/
+            DWORD dwGamePid = GameProcessId;
             if (ObjectType == *PsProcessType){
                 /*为什么使用PsLookupProcessByProcessId而不是我自己的函数，因为这个函数也会增加引用计数，
                 相当于模拟了ObReferenceObjectByHandle，caller在后面还会减少引用计数*/
                 status  = PsLookupProcessByProcessId((HANDLE)dwGamePid,&GameProcess);
                 if(NT_SUCCESS(status)){
+                    //LogPrint("csrss eprocess!\r\n");
                     *Object = GameProcess;
                     return STATUS_SUCCESS;
                 }

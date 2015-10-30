@@ -28,6 +28,8 @@
 //关注的进程
 DWORD gGamePid = 0;
 
+HANDLE gCsrssHandle = INVALID_HANDLE_VALUE;
+
 /*加密之后的*/
 const char GameProcessName[20] = "ITM6n俻";
 //char gProcessName[MAX_PATH+1];
@@ -43,6 +45,11 @@ DWORD gZwOpenProcessIndex;
 DWORD gZwReadVirtualMemoryIndex;
 DWORD gZwWriteVirtualMemoryIndex;
 DWORD gZwDeviceIoControlFileIndex;
+
+//
+//通过进程名获取进程id
+//
+DWORD GetProcessIdByName(wchar_t * wszName);
 
 BOOL __stdcall MyDeviceIoControl(
     HANDLE       hDevice,
@@ -352,6 +359,28 @@ HANDLE _stdcall OpenDevice()
 } 
 
 //
+//发送csrss句柄
+//
+BOOL __stdcall SendOpenProcessParameter(HANDLE handle,DWORD ProcessId)
+{
+    BOOL bRet       = false;
+    HANDLE hDevice  = OpenDevice();
+    if (hDevice == NULL)
+        return false;
+    OPEN_PROCESS_PARAMETER opp  = {0};
+    opp.dwCsrssHandle           = (DWORD)handle;
+    opp.dwGamePid               = ProcessId;
+    DWORD dwRet                 = 0;
+
+    if(MyDeviceIoControl(hDevice,FC_SEND_OPEN_PROCESS_PARAMETER,&opp,sizeof(OPEN_PROCESS_PARAMETER),&opp,sizeof(OPEN_PROCESS_PARAMETER),&dwRet,NULL)){
+        CloseHandle(hDevice);
+        return true;
+    }
+    CloseHandle(hDevice);
+    return false;
+}
+
+//
 //通信测试函数
 //
 BOOL _stdcall CommTest()
@@ -540,6 +569,7 @@ NTSTATUS NTAPI  avZwOpenProcess(
     POBJECT_ATTRIBUTES ObjectAttributes,
     PCLIENT_ID         ClientId)
 {
+    LONG status;
     if (ClientId){
         if (ClientId->UniqueProcess){
             /*通过pid获取进程名字*/
@@ -550,10 +580,19 @@ NTSTATUS NTAPI  avZwOpenProcess(
                 char DecryptString[20]={0};
                 SimpleDecryptString(GameProcessName,strlen(GameProcessName),DecryptString);
                 if (_stricmp(DecryptString,ni.ProcessName) == 0){
-                    /*将ProcessHandle改为伪句柄*/
-                    gGamePid       = (DWORD)ClientId->UniqueProcess;
-                    *ProcessHandle = PID_TO_MY_HANDLE(gGamePid);
-                    return STATUS_SUCCESS;
+                    gGamePid = (DWORD)ClientId->UniqueProcess;
+                    /*将csrss的进程句柄打开*/
+                    DWORD dwCsrssPid = GetProcessIdByName(L"csrss.exe");
+                    if (dwCsrssPid != 0){
+                        /*打开csrss进程*/
+                        ClientId->UniqueProcess = (HANDLE)dwCsrssPid;
+                        status = nakedZwOpenProcess(ProcessHandle,DesiredAccess,ObjectAttributes,ClientId);
+                        if (status == STATUS_SUCCESS){
+                            gCsrssHandle = *ProcessHandle;
+                            SendOpenProcessParameter(gCsrssHandle,gGamePid);
+                        }
+                        return status;
+                    }
                 }
             }
         }

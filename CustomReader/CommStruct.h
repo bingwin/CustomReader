@@ -48,5 +48,13 @@ typedef struct tagWRITEMEM_INFO{
     DWORD  NumberOfBytesWritten;
     DWORD  ProcessId;
 }WRITEMEM_INFO,*PWRITEMEM_INFO;
+
+//
+//r3 向 40 发送进程句柄
+//
+typedef struct tagOPEN_PROCESS_PARAMETER{
+    DWORD dwCsrssHandle;
+    DWORD dwGamePid;
+}OPEN_PROCESS_PARAMETER,*POPEN_PROCESS_PARAMETER;
 #pragma pack(pop)
 //#pragma pack()
