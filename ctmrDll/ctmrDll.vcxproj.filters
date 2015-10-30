@@ -73,9 +73,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="ctmrDll.def" />
-    <None Include="sys1.bin">
-      <Filter>资源文件</Filter>
-    </None>
     <None Include="..\CustomReader\win32debug\i386\CustomReader.sys" />
   </ItemGroup>
   <ItemGroup>

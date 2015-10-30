@@ -53,7 +53,7 @@ NTSTATUS __stdcall MyReadVirtualMemory(
             gReloadKeStackAttackProcess((PKPROCESS)targetProcess,&apcState);
             __try{
                 //一探测就有可能失败
-                //ProbeForRead(BaseAddress,NumberOfBytesToRead,1);
+                ProbeForRead(BaseAddress,NumberOfBytesToRead,1);
                 RtlCopyMemory(Buffer,BaseAddress,NumberOfBytesToRead);
 
             }__except(EXCEPTION_EXECUTE_HANDLER){
@@ -95,7 +95,7 @@ NTSTATUS __stdcall MyWriteVirtualMemory(
         if (status == STATUS_SUCCESS){
             gReloadKeStackAttackProcess((PKPROCESS)targetProcess,&apcState);
             __try{
-                //ProbeForWrite(BaseAddress,NumberOfBytesToWrite,1);
+                ProbeForWrite(BaseAddress,NumberOfBytesToWrite,1);
                 RtlCopyMemory(BaseAddress,Buffer,NumberOfBytesToWrite);
 
             }__except(EXCEPTION_EXECUTE_HANDLER){

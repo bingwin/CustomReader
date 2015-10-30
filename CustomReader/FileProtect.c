@@ -47,7 +47,7 @@ NTSTATUS __stdcall
 //                     ObjectAttributes->ObjectName->Length = 0;
 //                     RtlCopyUnicodeString(ObjectAttributes->ObjectName,&uniFakeDir);
 
-                    LogPrint("GameProcess access my file!\r\n");
+                    //LogPrint("GameProcess access my file!\r\n");
                     return STATUS_UNSUCCESSFUL;
                 }
             }
