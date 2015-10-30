@@ -11,6 +11,7 @@
     <ClCompile Include="FileSystem.c" />
     <ClCompile Include="Fixrelocation.c" />
     <ClCompile Include="HookEngine.c" />
+    <ClCompile Include="HookPort.c" />
     <ClCompile Include="KernelReload.c" />
     <ClCompile Include="LogSystem.c" />
     <ClCompile Include="main.c" />
@@ -28,6 +29,7 @@
     <ClInclude Include="FileSystem.h" />
     <ClInclude Include="Fixrelocation.h" />
     <ClInclude Include="HookEngine.h" />
+    <ClInclude Include="HookPort.h" />
     <ClInclude Include="KernelReload.h" />
     <ClInclude Include="LogSystem.h" />
     <ClInclude Include="Ntos.h" />

@@ -208,4 +208,19 @@ typedef NTSTATUS (__stdcall *PFN_NTOPENPROCESS)(
     POBJECT_ATTRIBUTES ObjectAttributes,
     PCLIENT_ID         ClientId
     );
+typedef NTSTATUS (__stdcall *PFN_NTREADVIRTUALMEMORY)(
+    __in HANDLE ProcessHandle,
+    __in_opt PVOID BaseAddress,
+    __out_bcount(BufferSize) PVOID Buffer,
+    __in SIZE_T BufferSize,
+    __out_opt PSIZE_T NumberOfBytesRead
+    );
+
+typedef NTSTATUS (__stdcall *PFN_NTWRITEVIRTUALMEMORY) (
+    __in HANDLE ProcessHandle,
+    __in_opt PVOID BaseAddress,
+    __in_bcount(BufferSize) CONST VOID *Buffer,
+    __in SIZE_T BufferSize,
+    __out_opt PSIZE_T NumberOfBytesWritten
+    );
 #endif//_UTILS_H_

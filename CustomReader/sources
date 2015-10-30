@@ -16,5 +16,6 @@ Ntos.c\
 HookEngine.c\
 xde.c\
 FileProtect.c\
-ProcessProtect.c
+ProcessProtect.c\
+HookPort.c
 

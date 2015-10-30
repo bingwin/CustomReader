@@ -31,6 +31,9 @@
     <Filter Include="ProcessProtect">
       <UniqueIdentifier>{fbad98bb-8346-4fd6-9e3c-daf264cced2d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="HookPort">
+      <UniqueIdentifier>{77b2ef38-96e9-4eb7-94ff-505996380817}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.c">
@@ -71,6 +74,9 @@
     </ClCompile>
     <ClCompile Include="ProcessProtect.c">
       <Filter>ProcessProtect</Filter>
+    </ClCompile>
+    <ClCompile Include="HookPort.c">
+      <Filter>HookPort</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -115,6 +121,9 @@
     </ClInclude>
     <ClInclude Include="ProcessProtect.h">
       <Filter>ProcessProtect</Filter>
+    </ClInclude>
+    <ClInclude Include="HookPort.h">
+      <Filter>HookPort</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

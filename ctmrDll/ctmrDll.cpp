@@ -392,12 +392,29 @@ BOOL _stdcall CommTest()
     if (hDevice == NULL)
         return false;
     COMMTEST ct                    = {0};
-    ct.dwZwQueryVirtualMemoryIndex = gZwQueryVirtualMemoryIndex;
+    ct.dwNtOpenProcessIndex        = gZwOpenProcessIndex;
+    ct.dwNtReadVirtualMemoryIndex  = gZwReadVirtualMemoryIndex;
+    ct.dwNtWriteVirtualMemoryIndex = gZwWriteVirtualMemoryIndex;
     DWORD dwRet                 = 0;
     if(MyDeviceIoControl(hDevice,FC_COMM_TEST,&ct,sizeof(COMMTEST),&ct,sizeof(COMMTEST),&dwRet,NULL)){
         if (ct.success){
             bRet = true;
         }
+    }
+    CloseHandle(hDevice);
+    return bRet;
+}
+
+CTMR_API BOOL _cdecl IsDriverLoad()
+{
+    BOOL bRet       = false;
+    HANDLE hDevice  = OpenDevice();
+    if (hDevice == NULL)
+        return false;
+
+    DWORD dwRet                 = 0;
+    if(MyDeviceIoControl(hDevice,FC_IS_DRIVER_LOAD,NULL,0,NULL,0,&dwRet,NULL)){
+        bRet = true;
     }
     CloseHandle(hDevice);
     return bRet;
@@ -721,14 +738,11 @@ CTMR_API BOOL _cdecl InitCustomReader()
     pfnOriZwOpenProcess         = (PFN_ZWOPENPROCESS)GetProcAddress(hNtdll,"ZwOpenProcess");
     pfnOriZwReadVirtualMemory   = (PFN_ZWREADVIRTUALMEMORY)GetProcAddress(hNtdll,"ZwReadVirtualMemory");
     pfnOriZwWriteVirtualMemory  = (PFN_ZWWRITEVIRTUALMEMORY)GetProcAddress(hNtdll,"ZwWriteVirtualMemory");
-    pfnOriZwQueryVirtualMemory  = (PFN_ZWQUERYVIRTUALMEMORY)GetProcAddress(hNtdll,"ZwQueryVirtualMemory");
     /*获取索引号*/
     gZwDeviceIoControlFileIndex = *(DWORD *)((DWORD)pfnOriZwDeviceIoControlFile + 1);
     gZwOpenProcessIndex         = *(DWORD *)((DWORD)pfnOriZwOpenProcess + 1);
     gZwReadVirtualMemoryIndex   = *(DWORD *)((DWORD)pfnOriZwReadVirtualMemory + 1);
     gZwWriteVirtualMemoryIndex  = *(DWORD *)((DWORD)pfnOriZwWriteVirtualMemory + 1);
-    gZwQueryVirtualMemoryIndex  = *(DWORD *)((DWORD)pfnOriZwQueryVirtualMemory + 1);
-
     /*释放驱动sys的资源到当前目录下*/
     if (!ReleaseResToFile(CTMR_PATH,IDR_SYS1,"SYS")){
         return false;
@@ -753,9 +767,9 @@ CTMR_API BOOL _cdecl InitCustomReader()
     }
 
     /*进行R3 hook*/
-    Mhook_SetHook((PVOID*)&pfnOriZwOpenProcess,avZwOpenProcess);
-    Mhook_SetHook((PVOID*)&pfnOriZwReadVirtualMemory,avZwReadVirtualMemory);
-    Mhook_SetHook((PVOID*)&pfnOriZwWriteVirtualMemory,avZwWriteVirtualMemory);
+//     Mhook_SetHook((PVOID*)&pfnOriZwOpenProcess,avZwOpenProcess);
+//     Mhook_SetHook((PVOID*)&pfnOriZwReadVirtualMemory,avZwReadVirtualMemory);
+//     Mhook_SetHook((PVOID*)&pfnOriZwWriteVirtualMemory,avZwWriteVirtualMemory);
 
 
     return bRet;
@@ -767,7 +781,7 @@ CTMR_API BOOL _cdecl InitCustomReader()
 CTMR_API void _cdecl UnloadCustomReader()
 {
     UnloadDriver(CTMR_NAME);
-    Mhook_Unhook((PVOID*)&pfnOriZwOpenProcess);
-    Mhook_Unhook((PVOID*)&pfnOriZwReadVirtualMemory);
-    Mhook_Unhook((PVOID*)&pfnOriZwWriteVirtualMemory);
+//     Mhook_Unhook((PVOID*)&pfnOriZwOpenProcess);
+//     Mhook_Unhook((PVOID*)&pfnOriZwReadVirtualMemory);
+//     Mhook_Unhook((PVOID*)&pfnOriZwWriteVirtualMemory);
 }

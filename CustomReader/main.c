@@ -11,6 +11,7 @@
 #include "FileProtect.h"
 #include "ProcessProtect.h"
 #include "HookEngine.h"
+#include "HookPort.h"
 
 
 #define CommDeviceName			L"\\Device\\ReaderDevice"
@@ -23,9 +24,21 @@ DWORD GameProcessId         = 0;
 
 BOOL bStartFileProtect      = FALSE;
 BOOL bStartProcessProtect   = FALSE;
+BOOL bStartHookPort         = FALSE;
+
+ULONG gZwOpenProcessIndex;
+ULONG gZwReadVirtualMemoryIndex;
+ULONG gZwWriteVirtualMemoryIndex;
 
 extern PFN_KESTACKATTACHPROCESS gReloadKeStackAttackProcess;
 extern PFN_KEUNSTACKDETACHPROCESS gReloadKeUnstackDetachProcess;
+
+
+extern PFN_NTOPENPROCESS gOriNtOpenProcess;
+extern PFN_NTREADVIRTUALMEMORY gOriNtReadVirtualMemory;
+extern PFN_NTWRITEVIRTUALMEMORY gOriNtWriteVirtualMemory;
+
+extern PSERVICE_DESCRIPTOR_TABLE ReloadKeServiceDescriptorTable;
 
 
 
@@ -190,8 +203,10 @@ VOID DriverUnload(PDRIVER_OBJECT pDriverObj)
         stopFileProtect();
     if (bStartProcessProtect)
         StopProcessProtect();
+    if (bStartHookPort)
+        StopHookPort();
 
-    FreeNtos();
+    //FreeNtos();
 }
 //
 //通用的派遣
@@ -226,11 +241,19 @@ NTSTATUS UserCmdDispatcher (IN PDEVICE_OBJECT DeviceObject,IN PIRP pIrp)
         {
             PCOMMTEST pCommTest = (PCOMMTEST)pIrp->AssociatedIrp.SystemBuffer;
 
+            gZwOpenProcessIndex = pCommTest->dwNtOpenProcessIndex;
+            gZwReadVirtualMemoryIndex  = pCommTest->dwNtReadVirtualMemoryIndex;
+            gZwWriteVirtualMemoryIndex = pCommTest->dwNtWriteVirtualMemoryIndex;
+            gOriNtOpenProcess = (PFN_NTOPENPROCESS)(ReloadKeServiceDescriptorTable->ServiceTable[gZwOpenProcessIndex]);
+            gOriNtReadVirtualMemory  = (PFN_NTREADVIRTUALMEMORY)(ReloadKeServiceDescriptorTable->ServiceTable[gZwReadVirtualMemoryIndex]);
+            gOriNtWriteVirtualMemory = (PFN_NTWRITEVIRTUALMEMORY)(ReloadKeServiceDescriptorTable->ServiceTable[gZwWriteVirtualMemoryIndex]);
+
             pCommTest->success   = TRUE;
             ProtectProcess       = PsGetCurrentProcess();
             /*在这里开启文件保护*/
             bStartFileProtect    = startFileProtect();
             bStartProcessProtect = StartProcessProtect();
+            bStartHookPort       = StartHookPort();
             info = cbout;
         }
         break;

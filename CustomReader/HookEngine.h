@@ -8,6 +8,12 @@ typedef struct tagHOOKINFO{
     PVOID retAddress;
     USHORT patchLength;
 }HOOKINFO,*PHOOKINFO;
+
+/*关闭写保护*/
+VOID disableWriteProtect();  
+
+/*开启写保护*/
+VOID enableWriteProtect();
 //
 //设置和移除inlinehook
 //

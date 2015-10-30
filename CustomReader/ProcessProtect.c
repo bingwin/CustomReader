@@ -143,63 +143,16 @@ VOID UnhookObOpenObjectByPointer()
     removeInlineHook(&gObOpenObjectByPointerInfo);
 }
 
-
-__declspec(naked) VOID NtOpenProcessZone()
-{
-    NOP_PROC;
-    __asm jmp [gNtOpenProcessInfo.retAddress]
-}
-
-NTSTATUS __stdcall NewNtOpenProcess(
-    PHANDLE            ProcessHandle,
-    ACCESS_MASK        DesiredAccess,
-    POBJECT_ATTRIBUTES ObjectAttributes,
-    PCLIENT_ID         ClientId
-    )
-{
-    PFN_NTOPENPROCESS pfnNtOpenProcess = (PFN_NTOPENPROCESS)NtOpenProcessZone;
-    if (PsGetCurrentProcess() == ProtectProcess){
-        return gReloadNtOpenProcess(ProcessHandle,DesiredAccess,ObjectAttributes,ClientId);
-    }
-    return pfnNtOpenProcess(ProcessHandle,DesiredAccess,ObjectAttributes,ClientId);
-}
-
-BOOL HookNtOpenProcess()
-{
-    BOOL bRet = FALSE;
-    ULONG ulNtOpenProcess;
-    ulNtOpenProcess = (ULONG)GetExportedFunctionAddr(L"NtOpenProcess");
-    if(ulNtOpenProcess == 0)
-        return FALSE;
-
-    gNtOpenProcessInfo.hookZone = NtOpenProcessZone;
-    gNtOpenProcessInfo.originAddress = ulNtOpenProcess;
-    gNtOpenProcessInfo.targetAddress = (ULONG)NewNtOpenProcess;
-    bRet = setInlineHook(&gNtOpenProcessInfo);
-    if(!bRet)
-        LogPrint("HookNtOpenProcess failed\r\n");
-    return bRet;
-}
-
-VOID UnhookNtOpenProcess()
-{
-    removeInlineHook(&gNtOpenProcessInfo);
-}
-
 BOOL StartProcessProtect()
 {
     if (!HookObReferenceObjectByHandle())
         return FALSE;
     if (!HookObOpenObjectByPointer())
         return FALSE;
-    if (!HookNtOpenProcess()){
-        return FALSE;
-    }
+
     return TRUE;
 }
 VOID StopProcessProtect()
 {
     UnhookObReferenceObjectByHandle();
-    UnhookObOpenObjectByPointer();
-    UnhookNtOpenProcess();
 }

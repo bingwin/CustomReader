@@ -94,3 +94,6 @@ CTMR_API BOOL _cdecl InitCustomReader();
 //在程序结束时卸载R3的hook、卸载内核中的驱动程序
 //
 CTMR_API void _cdecl UnloadCustomReader();
+
+///判断驱动是否已加载
+CTMR_API BOOL _cdecl IsDriverLoad();
