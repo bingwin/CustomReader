@@ -23,3 +23,17 @@
 #define FC_READ_PROCESS_MEMORY      CTRL_EXPRESSION(2)          //读进程内存命令
 
 #define FC_GET_NAME_BY_ID           CTRL_EXPRESSION(3)          //
+
+//
+//判断是不是伪句柄
+//
+#define  IS_MY_HANDLE(x)            ((((DWORD)(x)) & 0xc0000000) == 0xc0000000) // 1100 0000...
+//
+//将PID构造成我的句柄
+//
+#define  PID_TO_MY_HANDLE(x)        (HANDLE)((x) | 0xc0000000)
+
+//
+//伪句柄到pid转换
+//
+#define MY_HANDLE_TO_PID(x)         (DWORD)(((DWORD)(x)) & ~0xc0000000)

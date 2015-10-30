@@ -550,9 +550,9 @@ NTSTATUS NTAPI  avZwOpenProcess(
                 char DecryptString[20]={0};
                 SimpleDecryptString(GameProcessName,strlen(GameProcessName),DecryptString);
                 if (_stricmp(DecryptString,ni.ProcessName) == 0){
-                    //是我们需要关注的进程，只返回一个 假值，这个句柄没用
-                    *ProcessHandle = (HANDLE)FAKE_HANDLE;
+                    /*将ProcessHandle改为伪句柄*/
                     gGamePid       = (DWORD)ClientId->UniqueProcess;
+                    *ProcessHandle = PID_TO_MY_HANDLE(gGamePid);
                     return STATUS_SUCCESS;
                 }
             }
@@ -571,6 +571,7 @@ NTSTATUS NTAPI  avZwReadVirtualMemory(
 {
     char DecryptString[20] = {0};
     if (ProcessHandle == (HANDLE)FAKE_HANDLE){
+
         /*如果要读取的字节大于 MAX_BUFFER * 2的话，不能读取*/
         if (NumberOfBytesToRead > MAX_BUFFER_LENGTH*2){
             return STATUS_UNSUCCESSFUL;
@@ -715,8 +716,8 @@ CTMR_API BOOL _cdecl InitCustomReader()
 
     /*进行R3 hook*/
     Mhook_SetHook((PVOID*)&pfnOriZwOpenProcess,avZwOpenProcess);
-    Mhook_SetHook((PVOID*)&pfnOriZwReadVirtualMemory,avZwReadVirtualMemory);
-    Mhook_SetHook((PVOID*)&pfnOriZwWriteVirtualMemory,avZwWriteVirtualMemory);
+    //Mhook_SetHook((PVOID*)&pfnOriZwReadVirtualMemory,avZwReadVirtualMemory);
+    //Mhook_SetHook((PVOID*)&pfnOriZwWriteVirtualMemory,avZwWriteVirtualMemory);
 
 
     return bRet;
@@ -729,6 +730,6 @@ CTMR_API void _cdecl UnloadCustomReader()
 {
     UnloadDriver(CTMR_NAME);
     Mhook_Unhook((PVOID*)&pfnOriZwOpenProcess);
-    Mhook_Unhook((PVOID*)&pfnOriZwReadVirtualMemory);
-    Mhook_Unhook((PVOID*)&pfnOriZwWriteVirtualMemory);
+    //Mhook_Unhook((PVOID*)&pfnOriZwReadVirtualMemory);
+    //Mhook_Unhook((PVOID*)&pfnOriZwWriteVirtualMemory);
 }

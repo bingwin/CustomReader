@@ -25,8 +25,27 @@ NTSTATUS
     )
 {
     NTSTATUS status;
+    PEPROCESS GameProcess;
     PFN_OBREFERENCEOBJECTBYHANDLE pfnObReferenceObjectByHandle;
     pfnObReferenceObjectByHandle = (PFN_OBREFERENCEOBJECTBYHANDLE)ObReferenceObjectByHandleZone;
+
+    /*先判断是不是我的进程在使用游戏进程的句柄*/
+    if (PsGetCurrentProcess() == ProtectProcess){
+        if (IS_MY_HANDLE(Handle)){
+            DWORD dwGamePid = MY_HANDLE_TO_PID(Handle);
+            if (ObjectType == *PsProcessType){
+                /*为什么使用PsLookupProcessByProcessId而不是我自己的函数，因为这个函数也会增加引用计数，
+                相当于模拟了ObReferenceObjectByHandle，caller在后面还会减少引用计数*/
+                status  = PsLookupProcessByProcessId((HANDLE)dwGamePid,&GameProcess);
+                if(NT_SUCCESS(status)){
+                    *Object = GameProcess;
+                    return STATUS_SUCCESS;
+                }
+            }
+        }
+    }
+
+    /*不是我的进程在使用则调用原始的函数，也有可能是上面的PsLookup执行失败了*/
     status = pfnObReferenceObjectByHandle(Handle,
         DesiredAccess,
         ObjectType,

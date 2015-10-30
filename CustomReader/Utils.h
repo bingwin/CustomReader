@@ -176,6 +176,11 @@ NTSTATUS __stdcall
     OUT PVOID *Object
     );
 
+NTSTATUS NTAPI PsLookupProcessByProcessId(
+      HANDLE    ProcessId,
+     PEPROCESS *Process
+    );
+
 //VOID NTAPI KeStackAttachProcess	(IN PKPROCESS 	Process,OUT PKAPC_STATE 	ApcState );	
 //VOID NTAPI KeUnstackDetachProcess(IN PKAPC_STATE ApcState)	;
 
