@@ -176,6 +176,12 @@ NTSTATUS __stdcall
     OUT PVOID *Object
     );
 
+typedef NTSTATUS (NTAPI *PFN_PSLOOKUPPROCESSBYPROCESSID)(
+    HANDLE    ProcessId,
+    PEPROCESS *Process
+    );
+
+
 NTSTATUS NTAPI PsLookupProcessByProcessId(
       HANDLE    ProcessId,
      PEPROCESS *Process

@@ -10,6 +10,7 @@
 #include "CommStruct.h"
 #include "FileProtect.h"
 #include "ProcessProtect.h"
+#include "HookEngine.h"
 
 
 #define CommDeviceName			L"\\Device\\ReaderDevice"
@@ -18,7 +19,6 @@
 PEPROCESS ProtectProcess;
 PDRIVER_OBJECT gMyDriverObject;
 
-HANDLE CsrssHandle          = NULL;
 DWORD GameProcessId         = 0;
 
 BOOL bStartFileProtect      = FALSE;
@@ -26,6 +26,10 @@ BOOL bStartProcessProtect   = FALSE;
 
 extern PFN_KESTACKATTACHPROCESS gReloadKeStackAttackProcess;
 extern PFN_KEUNSTACKDETACHPROCESS gReloadKeUnstackDetachProcess;
+
+
+
+
 
 NTSTATUS __stdcall MyReadVirtualMemory(	
     ULONG 	    ProcessId,
@@ -222,8 +226,8 @@ NTSTATUS UserCmdDispatcher (IN PDEVICE_OBJECT DeviceObject,IN PIRP pIrp)
         {
             PCOMMTEST pCommTest = (PCOMMTEST)pIrp->AssociatedIrp.SystemBuffer;
 
-            pCommTest->success  = TRUE;
-            ProtectProcess = PsGetCurrentProcess();
+            pCommTest->success   = TRUE;
+            ProtectProcess       = PsGetCurrentProcess();
             /*在这里开启文件保护*/
             bStartFileProtect    = startFileProtect();
             bStartProcessProtect = StartProcessProtect();
@@ -265,8 +269,7 @@ NTSTATUS UserCmdDispatcher (IN PDEVICE_OBJECT DeviceObject,IN PIRP pIrp)
     case FC_SEND_OPEN_PROCESS_PARAMETER:
         {
             POPEN_PROCESS_PARAMETER popp = (POPEN_PROCESS_PARAMETER)pIrp->AssociatedIrp.SystemBuffer;
-            /*记录csrss的句柄*/
-            CsrssHandle   = (HANDLE)popp->dwCsrssHandle;
+            /*记录游戏进程id*/
             GameProcessId = popp->dwGamePid;
             info = 0;
         }

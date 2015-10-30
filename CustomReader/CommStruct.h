@@ -10,6 +10,7 @@
 typedef struct tagCOMMTEST{
 
     DWORD success;//结构体里面尽量不要使用 bool值
+    DWORD dwZwQueryVirtualMemoryIndex;
 }COMMTEST,*PCOMMTEST;
 
 typedef struct tagNAMEINFO{

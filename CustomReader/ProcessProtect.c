@@ -9,6 +9,7 @@ HOOKINFO gObOpenObjectByPointerInfo;
 extern PEPROCESS ProtectProcess;
 extern HANDLE CsrssHandle;
 extern DWORD GameProcessId;
+extern PFN_PSLOOKUPPROCESSBYPROCESSID gReloadPsLookupProcessByProcessId;
 
 __declspec(naked)VOID ObReferenceObjectByHandleZone()
 {
@@ -32,24 +33,18 @@ NTSTATUS
     PFN_OBREFERENCEOBJECTBYHANDLE pfnObReferenceObjectByHandle;
     pfnObReferenceObjectByHandle = (PFN_OBREFERENCEOBJECTBYHANDLE)ObReferenceObjectByHandleZone;
 
-    /*先判断是不是我的进程在使用游戏进程的句柄*/
     if (PsGetCurrentProcess() == ProtectProcess){
-        if (Handle == CsrssHandle){
-
-            /*证明是自己要操作游戏进程内存*/
-            DWORD dwGamePid = GameProcessId;
+        if (Handle == (HANDLE)FAKE_HANDLE){
             if (ObjectType == *PsProcessType){
-                /*为什么使用PsLookupProcessByProcessId而不是我自己的函数，因为这个函数也会增加引用计数，
-                相当于模拟了ObReferenceObjectByHandle，caller在后面还会减少引用计数*/
-                status  = PsLookupProcessByProcessId((HANDLE)dwGamePid,&GameProcess);
-                if(NT_SUCCESS(status)){
-                    //LogPrint("csrss eprocess!\r\n");
+                status = gReloadPsLookupProcessByProcessId((HANDLE)GameProcessId,&GameProcess);
+                if (NT_SUCCESS(status)){
                     *Object = GameProcess;
-                    return STATUS_SUCCESS;
+                    return status;
                 }
             }
         }
     }
+
 
     /*不是我的进程在使用则调用原始的函数，也有可能是上面的PsLookup执行失败了*/
     status = pfnObReferenceObjectByHandle(Handle,

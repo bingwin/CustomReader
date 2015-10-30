@@ -72,6 +72,19 @@ typedef NTSTATUS (NTAPI *PFN_ZWWRITEVIRTUALMEMORY)(
 	 SIZE_T 	NumberOfBytesToWrite,
 	 PSIZE_T 	NumberOfBytesWritten );
 
+typedef enum _MEMORY_INFORMATION_CLASS { 
+    MemoryBasicInformation
+} MEMORY_INFORMATION_CLASS;
+
+typedef NTSTATUS (NTAPI *PFN_ZWQUERYVIRTUALMEMORY)(
+    _In_      HANDLE                   ProcessHandle,
+    _In_opt_  PVOID                    BaseAddress,
+    _In_      MEMORY_INFORMATION_CLASS MemoryInformationClass,
+    _Out_     PVOID                    MemoryInformation,
+    _In_      SIZE_T                   MemoryInformationLength,
+    _Out_opt_ PSIZE_T                  ReturnLength
+    );
+
 //
 //完成customreader的初始化工作，包括R3的ntdll改造、R0驱动的加载和通信测试
 //

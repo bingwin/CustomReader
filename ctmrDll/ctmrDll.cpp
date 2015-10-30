@@ -38,6 +38,7 @@ PFN_ZWDEVICEIOCONTROLFILE pfnOriZwDeviceIoControlFile;
 PFN_ZWOPENPROCESS pfnOriZwOpenProcess;
 PFN_ZWREADVIRTUALMEMORY pfnOriZwReadVirtualMemory;
 PFN_ZWWRITEVIRTUALMEMORY pfnOriZwWriteVirtualMemory;
+PFN_ZWQUERYVIRTUALMEMORY pfnOriZwQueryVirtualMemory;
 //
 //三个函数在SSDT表中的索引号
 //
@@ -45,6 +46,7 @@ DWORD gZwOpenProcessIndex;
 DWORD gZwReadVirtualMemoryIndex;
 DWORD gZwWriteVirtualMemoryIndex;
 DWORD gZwDeviceIoControlFileIndex;
+DWORD gZwQueryVirtualMemoryIndex;
 
 //
 //通过进程名获取进程id
@@ -389,7 +391,8 @@ BOOL _stdcall CommTest()
     HANDLE hDevice  = OpenDevice();
     if (hDevice == NULL)
         return false;
-    COMMTEST ct                 = {0};
+    COMMTEST ct                    = {0};
+    ct.dwZwQueryVirtualMemoryIndex = gZwQueryVirtualMemoryIndex;
     DWORD dwRet                 = 0;
     if(MyDeviceIoControl(hDevice,FC_COMM_TEST,&ct,sizeof(COMMTEST),&ct,sizeof(COMMTEST),&dwRet,NULL)){
         if (ct.success){
@@ -569,7 +572,6 @@ NTSTATUS NTAPI  avZwOpenProcess(
     POBJECT_ATTRIBUTES ObjectAttributes,
     PCLIENT_ID         ClientId)
 {
-    LONG status;
     if (ClientId){
         if (ClientId->UniqueProcess){
             /*通过pid获取进程名字*/
@@ -580,24 +582,15 @@ NTSTATUS NTAPI  avZwOpenProcess(
                 char DecryptString[20]={0};
                 SimpleDecryptString(GameProcessName,strlen(GameProcessName),DecryptString);
                 if (_stricmp(DecryptString,ni.ProcessName) == 0){
+                    /*记录游戏pid*/
                     gGamePid = (DWORD)ClientId->UniqueProcess;
-                    /*将csrss的进程句柄打开*/
-                    DWORD dwCsrssPid = GetProcessIdByName(L"csrss.exe");
-                    if (dwCsrssPid != 0){
-                        /*打开csrss进程*/
-                        ClientId->UniqueProcess = (HANDLE)dwCsrssPid;
-                        status = nakedZwOpenProcess(ProcessHandle,DesiredAccess,ObjectAttributes,ClientId);
-                        if (status == STATUS_SUCCESS){
-                            gCsrssHandle = *ProcessHandle;
-                            SendOpenProcessParameter(gCsrssHandle,gGamePid);
-                        }
-                        return status;
+                    *ProcessHandle = (HANDLE)FAKE_HANDLE;
+                    SendOpenProcessParameter((HANDLE)0,gGamePid);
+                    return STATUS_SUCCESS;
                     }
                 }
             }
         }
-    }
-    
     return nakedZwOpenProcess(ProcessHandle,DesiredAccess,ObjectAttributes,ClientId);
 }
 
@@ -722,13 +715,13 @@ CTMR_API BOOL _cdecl InitCustomReader()
     pfnOriZwOpenProcess         = (PFN_ZWOPENPROCESS)GetProcAddress(hNtdll,"ZwOpenProcess");
     pfnOriZwReadVirtualMemory   = (PFN_ZWREADVIRTUALMEMORY)GetProcAddress(hNtdll,"ZwReadVirtualMemory");
     pfnOriZwWriteVirtualMemory  = (PFN_ZWWRITEVIRTUALMEMORY)GetProcAddress(hNtdll,"ZwWriteVirtualMemory");
+    pfnOriZwQueryVirtualMemory  = (PFN_ZWQUERYVIRTUALMEMORY)GetProcAddress(hNtdll,"ZwQueryVirtualMemory");
     /*获取索引号*/
     gZwDeviceIoControlFileIndex = *(DWORD *)((DWORD)pfnOriZwDeviceIoControlFile + 1);
     gZwOpenProcessIndex         = *(DWORD *)((DWORD)pfnOriZwOpenProcess + 1);
     gZwReadVirtualMemoryIndex   = *(DWORD *)((DWORD)pfnOriZwReadVirtualMemory + 1);
     gZwWriteVirtualMemoryIndex  = *(DWORD *)((DWORD)pfnOriZwWriteVirtualMemory + 1);
-
-    DbgPrint("gZwReadVirtualMemoryIndex: 0x%x\r\n",gZwReadVirtualMemoryIndex);
+    gZwQueryVirtualMemoryIndex  = *(DWORD *)((DWORD)pfnOriZwQueryVirtualMemory + 1);
 
     /*释放驱动sys的资源到当前目录下*/
     if (!ReleaseResToFile(CTMR_PATH,IDR_SYS1,"SYS")){
@@ -755,8 +748,8 @@ CTMR_API BOOL _cdecl InitCustomReader()
 
     /*进行R3 hook*/
     Mhook_SetHook((PVOID*)&pfnOriZwOpenProcess,avZwOpenProcess);
-    //Mhook_SetHook((PVOID*)&pfnOriZwReadVirtualMemory,avZwReadVirtualMemory);
-    //Mhook_SetHook((PVOID*)&pfnOriZwWriteVirtualMemory,avZwWriteVirtualMemory);
+    Mhook_SetHook((PVOID*)&pfnOriZwReadVirtualMemory,avZwReadVirtualMemory);
+    Mhook_SetHook((PVOID*)&pfnOriZwWriteVirtualMemory,avZwWriteVirtualMemory);
 
 
     return bRet;
@@ -769,6 +762,6 @@ CTMR_API void _cdecl UnloadCustomReader()
 {
     UnloadDriver(CTMR_NAME);
     Mhook_Unhook((PVOID*)&pfnOriZwOpenProcess);
-    //Mhook_Unhook((PVOID*)&pfnOriZwReadVirtualMemory);
-    //Mhook_Unhook((PVOID*)&pfnOriZwWriteVirtualMemory);
+    Mhook_Unhook((PVOID*)&pfnOriZwReadVirtualMemory);
+    Mhook_Unhook((PVOID*)&pfnOriZwWriteVirtualMemory);
 }
