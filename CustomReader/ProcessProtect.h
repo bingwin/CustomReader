@@ -27,7 +27,9 @@ typedef NTSTATUS                                                        // ntifs
      POBJECT_TYPE ObjectType,                        // ntifs
      KPROCESSOR_MODE AccessMode,                              // ntifs
      PHANDLE Handle                                          // ntifs
-    );                                                          // ntifs
+    );  
+// ntifs
+
 
 BOOL StartProcessProtect();
 VOID StopProcessProtect();

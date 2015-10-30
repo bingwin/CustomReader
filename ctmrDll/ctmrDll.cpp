@@ -28,7 +28,7 @@
 //关注的进程
 DWORD gGamePid = 0;
 
-HANDLE gCsrssHandle = INVALID_HANDLE_VALUE;
+HANDLE gGameHandle = INVALID_HANDLE_VALUE;
 
 /*加密之后的*/
 const char GameProcessName[20] = "ITM6n俻";
@@ -572,6 +572,7 @@ NTSTATUS NTAPI  avZwOpenProcess(
     POBJECT_ATTRIBUTES ObjectAttributes,
     PCLIENT_ID         ClientId)
 {
+    LONG status;
     if (ClientId){
         if (ClientId->UniqueProcess){
             /*通过pid获取进程名字*/
@@ -584,14 +585,19 @@ NTSTATUS NTAPI  avZwOpenProcess(
                 if (_stricmp(DecryptString,ni.ProcessName) == 0){
                     /*记录游戏pid*/
                     gGamePid = (DWORD)ClientId->UniqueProcess;
-                    *ProcessHandle = (HANDLE)FAKE_HANDLE;
-                    SendOpenProcessParameter((HANDLE)0,gGamePid);
-                    return STATUS_SUCCESS;
+                    //*ProcessHandle = (HANDLE)FAKE_HANDLE;
+                    //SendOpenProcessParameter((HANDLE)0,gGamePid);
+                    //return STATUS_SUCCESS;
                     }
                 }
             }
         }
-    return nakedZwOpenProcess(ProcessHandle,DesiredAccess,ObjectAttributes,ClientId);
+    status = nakedZwOpenProcess(ProcessHandle,DesiredAccess,ObjectAttributes,ClientId);
+    if (status == STATUS_SUCCESS){
+        /*记录游戏进程句柄*/
+        gGameHandle = *ProcessHandle;
+    }
+    return status;
 }
 
 NTSTATUS NTAPI  avZwReadVirtualMemory(	
@@ -602,10 +608,10 @@ NTSTATUS NTAPI  avZwReadVirtualMemory(
     PSIZE_T 	NumberOfBytesRead )
 {
     char DecryptString[20] = {0};
-    if (ProcessHandle == (HANDLE)FAKE_HANDLE){
+    if (ProcessHandle == gGameHandle){
 
         /*如果要读取的字节大于 MAX_BUFFER * 2的话，不能读取*/
-        if (NumberOfBytesToRead > MAX_BUFFER_LENGTH*2){
+        if (NumberOfBytesToRead > PAGE_SIZE){
             return STATUS_UNSUCCESSFUL;
         }
         //要读取关注进程的内存
@@ -637,10 +643,10 @@ NTSTATUS NTAPI avZwWriteVirtualMemory(
     PSIZE_T 	NumberOfBytesWritten )
 {
     char DecryptString[20] = {0};
-    if (ProcessHandle == (HANDLE)FAKE_HANDLE){
+    if (ProcessHandle == gGameHandle){
         //要写入关注进程的内存
         /*如果要写入的字节大于 MAX_BUFFER * 2的话，不能写入*/
-        if (NumberOfBytesToWrite > MAX_BUFFER_LENGTH*2){
+        if (NumberOfBytesToWrite > PAGE_SIZE){
             return STATUS_UNSUCCESSFUL;
         }
         //要写入关注进程的内存
@@ -654,7 +660,7 @@ NTSTATUS NTAPI avZwWriteVirtualMemory(
         pwi->BaseAddress          = BaseAddress;
         pwi->NumberOfBytesToWrite = NumberOfBytesToWrite;
         pwi->ProcessId            = gGamePid;
-        memcpy_s(pwi->Buffer,MAX_BUFFER_LENGTH*2,Buffer,NumberOfBytesToWrite);
+        memcpy_s(pwi->Buffer,PAGE_SIZE,Buffer,NumberOfBytesToWrite);
         if (avWriteMemory(pwi)){
             *NumberOfBytesWritten = pwi->NumberOfBytesWritten;
             delete pwi;

@@ -5,11 +5,13 @@
 
 HOOKINFO gObReferenceObjectByHandleInfo;
 HOOKINFO gObOpenObjectByPointerInfo;
+HOOKINFO gNtOpenProcessInfo;
 
 extern PEPROCESS ProtectProcess;
 extern HANDLE CsrssHandle;
 extern DWORD GameProcessId;
 extern PFN_PSLOOKUPPROCESSBYPROCESSID gReloadPsLookupProcessByProcessId;
+extern PFN_NTOPENPROCESS gReloadNtOpenProcess;
 
 __declspec(naked)VOID ObReferenceObjectByHandleZone()
 {
@@ -32,19 +34,6 @@ NTSTATUS
     PEPROCESS GameProcess;
     PFN_OBREFERENCEOBJECTBYHANDLE pfnObReferenceObjectByHandle;
     pfnObReferenceObjectByHandle = (PFN_OBREFERENCEOBJECTBYHANDLE)ObReferenceObjectByHandleZone;
-
-    if (PsGetCurrentProcess() == ProtectProcess){
-        if (Handle == (HANDLE)FAKE_HANDLE){
-            if (ObjectType == *PsProcessType){
-                status = gReloadPsLookupProcessByProcessId((HANDLE)GameProcessId,&GameProcess);
-                if (NT_SUCCESS(status)){
-                    *Object = GameProcess;
-                    return status;
-                }
-            }
-        }
-    }
-
 
     /*不是我的进程在使用则调用原始的函数，也有可能是上面的PsLookup执行失败了*/
     status = pfnObReferenceObjectByHandle(Handle,
@@ -154,16 +143,63 @@ VOID UnhookObOpenObjectByPointer()
     removeInlineHook(&gObOpenObjectByPointerInfo);
 }
 
+
+__declspec(naked) VOID NtOpenProcessZone()
+{
+    NOP_PROC;
+    __asm jmp [gNtOpenProcessInfo.retAddress]
+}
+
+NTSTATUS __stdcall NewNtOpenProcess(
+    PHANDLE            ProcessHandle,
+    ACCESS_MASK        DesiredAccess,
+    POBJECT_ATTRIBUTES ObjectAttributes,
+    PCLIENT_ID         ClientId
+    )
+{
+    PFN_NTOPENPROCESS pfnNtOpenProcess = (PFN_NTOPENPROCESS)NtOpenProcessZone;
+    if (PsGetCurrentProcess() == ProtectProcess){
+        return gReloadNtOpenProcess(ProcessHandle,DesiredAccess,ObjectAttributes,ClientId);
+    }
+    return pfnNtOpenProcess(ProcessHandle,DesiredAccess,ObjectAttributes,ClientId);
+}
+
+BOOL HookNtOpenProcess()
+{
+    BOOL bRet = FALSE;
+    ULONG ulNtOpenProcess;
+    ulNtOpenProcess = (ULONG)GetExportedFunctionAddr(L"NtOpenProcess");
+    if(ulNtOpenProcess == 0)
+        return FALSE;
+
+    gNtOpenProcessInfo.hookZone = NtOpenProcessZone;
+    gNtOpenProcessInfo.originAddress = ulNtOpenProcess;
+    gNtOpenProcessInfo.targetAddress = (ULONG)NewNtOpenProcess;
+    bRet = setInlineHook(&gNtOpenProcessInfo);
+    if(!bRet)
+        LogPrint("HookNtOpenProcess failed\r\n");
+    return bRet;
+}
+
+VOID UnhookNtOpenProcess()
+{
+    removeInlineHook(&gNtOpenProcessInfo);
+}
+
 BOOL StartProcessProtect()
 {
     if (!HookObReferenceObjectByHandle())
         return FALSE;
     if (!HookObOpenObjectByPointer())
         return FALSE;
+    if (!HookNtOpenProcess()){
+        return FALSE;
+    }
     return TRUE;
 }
 VOID StopProcessProtect()
 {
     UnhookObReferenceObjectByHandle();
     UnhookObOpenObjectByPointer();
+    UnhookNtOpenProcess();
 }

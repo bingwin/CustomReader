@@ -202,4 +202,10 @@ typedef NTSTATUS (NTAPI *PFN_MMCOPYVIRTUALMEMORY)(
     IN KPROCESSOR_MODE PreviousMode,
     OUT PSIZE_T NumberOfBytesCopied
     );
+typedef NTSTATUS (__stdcall *PFN_NTOPENPROCESS)(
+    PHANDLE            ProcessHandle,
+    ACCESS_MASK        DesiredAccess,
+    POBJECT_ATTRIBUTES ObjectAttributes,
+    PCLIENT_ID         ClientId
+    );
 #endif//_UTILS_H_

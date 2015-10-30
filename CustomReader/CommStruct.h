@@ -1,6 +1,7 @@
 #pragma once
 
 #define  MAX_BUFFER_LENGTH      260
+#define  PAGE_SIZE (0x1000)
 //typedef unsigned char  BOOL, *PBOOL;
 //
 //通信相关结构
@@ -28,7 +29,7 @@ typedef struct tagNAMEINFO{
 //PSIZE_T 	NumberOfBytesRead
 typedef struct tagREADMEM_INFO{
     char   ProcessName[MAX_BUFFER_LENGTH];
-    UCHAR  Buffer[MAX_BUFFER_LENGTH * 2];
+    UCHAR  Buffer[PAGE_SIZE];
     PVOID  BaseAddress;
     DWORD  NumberOfBytesToRead;
     DWORD  NumberOfBytesRead;
