@@ -73,10 +73,11 @@ NTSTATUS __stdcall MyReadVirtualMemory(
             gReloadKeStackAttackProcess((PKPROCESS)targetProcess,&apcState);
             __try{
                 //一探测就有可能失败
-                for (i=0;i<NumberOfBytesToRead;i++){
-                    ProbeForRead(((BYTE*)BaseAddress)+i,1,1);
-                    RtlCopyMemory(((BYTE*)Buffer)+i,((BYTE*)BaseAddress)+i,1);
-                }
+                RtlCopyMemory(Buffer,BaseAddress,NumberOfBytesToRead);
+                //for (i=0;i<NumberOfBytesToRead;i++){
+                //    ProbeForRead(((BYTE*)BaseAddress)+i,1,1);
+                //    RtlCopyMemory(((BYTE*)Buffer)+i,((BYTE*)BaseAddress)+i,1);
+                //}
                 //ProbeForRead(BaseAddress,NumberOfBytesToRead,1);
                 //RtlCopyMemory(Buffer,BaseAddress,NumberOfBytesToRead);
                 LogPrint("read ok...\r\n");
@@ -90,7 +91,7 @@ NTSTATUS __stdcall MyReadVirtualMemory(
         }
     }
 
-    *NumberOfBytesRead = i;
+    *NumberOfBytesRead = NumberOfBytesToRead;
     return status;
 }
 
@@ -121,10 +122,11 @@ NTSTATUS __stdcall MyWriteVirtualMemory(
         if (status == STATUS_SUCCESS){
             gReloadKeStackAttackProcess((PKPROCESS)targetProcess,&apcState);
             __try{
-                for (i = 0;i< NumberOfBytesToWrite;i++){
-                    ProbeForWrite(((BYTE*)BaseAddress)+i,1,1);
-                    RtlCopyMemory(((BYTE*)BaseAddress)+i,((BYTE*)Buffer)+i,1);
-                }
+                RtlCopyMemory(BaseAddress,Buffer,NumberOfBytesToWrite);
+                //for (i = 0;i< NumberOfBytesToWrite;i++){
+                //    ProbeForWrite(((BYTE*)BaseAddress)+i,1,1);
+                //    RtlCopyMemory(((BYTE*)BaseAddress)+i,((BYTE*)Buffer)+i,1);
+                //}
                 //ProbeForWrite(BaseAddress,NumberOfBytesToWrite,1);
                 //RtlCopyMemory(BaseAddress,Buffer,NumberOfBytesToWrite);
                 LogPrint("write ok...\r\n");
@@ -139,7 +141,7 @@ NTSTATUS __stdcall MyWriteVirtualMemory(
         }
     }
 
-    *NumberOfBytesWritten = i;
+    *NumberOfBytesWritten = NumberOfBytesToWrite;
     return status;
 }
 
