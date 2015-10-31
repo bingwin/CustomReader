@@ -5,13 +5,12 @@
 
 HOOKINFO gObReferenceObjectByHandleInfo;
 HOOKINFO gObOpenObjectByPointerInfo;
-HOOKINFO gNtOpenProcessInfo;
+HOOKINFO gNtQueryVirtualMemoryInfo;
 
 extern PEPROCESS ProtectProcess;
 extern HANDLE CsrssHandle;
 extern DWORD GameProcessId;
-extern PFN_PSLOOKUPPROCESSBYPROCESSID gReloadPsLookupProcessByProcessId;
-extern PFN_NTOPENPROCESS gReloadNtOpenProcess;
+extern PSERVICE_DESCRIPTOR_TABLE ReloadKeServiceDescriptorTable;
 
 __declspec(naked)VOID ObReferenceObjectByHandleZone()
 {
@@ -32,8 +31,28 @@ NTSTATUS
 {
     NTSTATUS status;
     PEPROCESS GameProcess;
+    POBJECT_HEADER ObjectHeader;
     PFN_OBREFERENCEOBJECTBYHANDLE pfnObReferenceObjectByHandle;
     pfnObReferenceObjectByHandle = (PFN_OBREFERENCEOBJECTBYHANDLE)ObReferenceObjectByHandleZone;
+
+
+    /*是否是查询内存函数调用*/
+    if (PsGetCurrentProcess() == ProtectProcess){
+        if (Handle == FAKE_HANDLE){
+            if (ObjectType == *PsProcessType){
+                status = LookupProcessByProcessId(GameProcessId,&GameProcess);
+                if(NT_SUCCESS(status)){
+
+                    ObjectHeader = OBJECT_TO_OBJECT_HEADER(GameProcess);
+                    /*手动增加引用计数*/
+                    InterlockedIncrement(&ObjectHeader->PointerCount);
+                    LogPrint("get process!\r\n");
+                    *Object = GameProcess;
+                    return status;
+                }
+            }
+        }
+    }
 
     /*不是我的进程在使用则调用原始的函数，也有可能是上面的PsLookup执行失败了*/
     status = pfnObReferenceObjectByHandle(Handle,
@@ -138,21 +157,78 @@ BOOL HookObOpenObjectByPointer()
         LogPrint("HookObOpenObjectByPointer->setInlineHook failed\r\n");
     return bRetOk;
 }
+
 VOID UnhookObOpenObjectByPointer()
 {
     removeInlineHook(&gObOpenObjectByPointerInfo);
 }
 
+
+__declspec(naked) VOID NtQueryVirtualMemoryZone()
+{
+    NOP_PROC;
+    __asm jmp [gNtQueryVirtualMemoryInfo.retAddress]
+}
+
+NTSTATUS __stdcall
+    NewNtQueryVirtualMemory(
+    __in HANDLE ProcessHandle,
+    __in PVOID BaseAddress,
+    __in MEMORY_INFORMATION_CLASS MemoryInformationClass,
+    __out_bcount(MemoryInformationLength) PVOID MemoryInformation,
+    __in SIZE_T MemoryInformationLength,
+    __out_opt PSIZE_T ReturnLength
+    )
+{
+    NTSTATUS status;
+    PFN_NTQUERYVIRTUALMEMORY pfnOrinNtQueryVirtualMemory = (PFN_NTQUERYVIRTUALMEMORY)NtQueryVirtualMemoryZone;
+
+    status = pfnOrinNtQueryVirtualMemory(ProcessHandle,BaseAddress,MemoryInformationClass,MemoryInformation,MemoryInformationLength,ReturnLength);
+    if (!NT_SUCCESS(status)){
+        LogPrint("query failed,code: 0x%x\r\n",status);
+    }
+    else{
+        LogPrint("NewNtQueryVirtualMemory ok!\r\n");
+    }
+    return status;
+}
+
+BOOL HookNtQueryVirtualMemory()
+{
+    ULONG oriNtQueryVirtualMemoryAddr = ReloadKeServiceDescriptorTable->ServiceTable[178];
+    gNtQueryVirtualMemoryInfo.originAddress = oriNtQueryVirtualMemoryAddr;
+    gNtQueryVirtualMemoryInfo.targetAddress = (ULONG)NewNtQueryVirtualMemory;
+    gNtQueryVirtualMemoryInfo.hookZone      = NtQueryVirtualMemoryZone;
+
+    return setInlineHook(&gNtQueryVirtualMemoryInfo);
+}
+
+VOID UnhookNtQueryVirtualMemory()
+{
+    removeInlineHook(&gNtQueryVirtualMemoryInfo);
+}
+
+
+
 BOOL StartProcessProtect()
 {
     if (!HookObReferenceObjectByHandle())
         return FALSE;
-    if (!HookObOpenObjectByPointer())
+    if (!HookObOpenObjectByPointer()){
+        UnhookObReferenceObjectByHandle();
         return FALSE;
+    }
+    //if (!HookNtQueryVirtualMemory()){
+    //    UnhookObReferenceObjectByHandle();
+    //    UnhookObOpenObjectByPointer();
+    //    return FALSE;
+    //}
 
     return TRUE;
 }
 VOID StopProcessProtect()
 {
     UnhookObReferenceObjectByHandle();
+    UnhookObOpenObjectByPointer();
+    //UnhookNtQueryVirtualMemory();
 }

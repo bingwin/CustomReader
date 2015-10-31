@@ -11,7 +11,6 @@
 #include "FileProtect.h"
 #include "ProcessProtect.h"
 #include "HookEngine.h"
-#include "HookPort.h"
 
 
 #define CommDeviceName			L"\\Device\\ReaderDevice"
@@ -54,6 +53,7 @@ NTSTATUS __stdcall MyReadVirtualMemory(
     NTSTATUS status         = STATUS_UNSUCCESSFUL;
     PEPROCESS targetProcess = NULL;
     KAPC_STATE apcState;
+    DWORD i;
 
 
         /*这个函数肯定是用户层调用的*/
@@ -73,19 +73,24 @@ NTSTATUS __stdcall MyReadVirtualMemory(
             gReloadKeStackAttackProcess((PKPROCESS)targetProcess,&apcState);
             __try{
                 //一探测就有可能失败
-                ProbeForRead(BaseAddress,NumberOfBytesToRead,1);
-                RtlCopyMemory(Buffer,BaseAddress,NumberOfBytesToRead);
+                for (i=0;i<NumberOfBytesToRead;i++){
+                    ProbeForRead(((BYTE*)BaseAddress)+i,1,1);
+                    RtlCopyMemory(((BYTE*)Buffer)+i,((BYTE*)BaseAddress)+i,1);
+                }
+                //ProbeForRead(BaseAddress,NumberOfBytesToRead,1);
+                //RtlCopyMemory(Buffer,BaseAddress,NumberOfBytesToRead);
+                LogPrint("read ok...\r\n");
 
             }__except(EXCEPTION_EXECUTE_HANDLER){
-                gReloadKeUnstackDetachProcess(&apcState);
-                return GetExceptionCode();
+                //gReloadKeUnstackDetachProcess(&apcState);
+                LogPrint("read exception...\r\n");
+                //return GetExceptionCode();
             }
-
             gReloadKeUnstackDetachProcess(&apcState);
         }
     }
 
-    *NumberOfBytesRead = NumberOfBytesToRead;
+    *NumberOfBytesRead = i;
     return status;
 }
 
@@ -99,6 +104,7 @@ NTSTATUS __stdcall MyWriteVirtualMemory(
     NTSTATUS status         = STATUS_UNSUCCESSFUL;
     PEPROCESS targetProcess = NULL;
     KAPC_STATE apcState;
+    ULONG i;
 
     if (((PCHAR)BaseAddress + NumberOfBytesToWrite < (PCHAR)BaseAddress) ||
         ((PCHAR)Buffer + NumberOfBytesToWrite < (PCHAR)Buffer) ||
@@ -115,19 +121,25 @@ NTSTATUS __stdcall MyWriteVirtualMemory(
         if (status == STATUS_SUCCESS){
             gReloadKeStackAttackProcess((PKPROCESS)targetProcess,&apcState);
             __try{
-                ProbeForWrite(BaseAddress,NumberOfBytesToWrite,1);
-                RtlCopyMemory(BaseAddress,Buffer,NumberOfBytesToWrite);
+                for (i = 0;i< NumberOfBytesToWrite;i++){
+                    ProbeForWrite(((BYTE*)BaseAddress)+i,1,1);
+                    RtlCopyMemory(((BYTE*)BaseAddress)+i,((BYTE*)Buffer)+i,1);
+                }
+                //ProbeForWrite(BaseAddress,NumberOfBytesToWrite,1);
+                //RtlCopyMemory(BaseAddress,Buffer,NumberOfBytesToWrite);
+                LogPrint("write ok...\r\n");
 
             }__except(EXCEPTION_EXECUTE_HANDLER){
-                gReloadKeUnstackDetachProcess(&apcState);
-                return GetExceptionCode();
+                //gReloadKeUnstackDetachProcess(&apcState);
+                LogPrint("write exception...\r\n");
+                //return GetExceptionCode();
             }
 
             gReloadKeUnstackDetachProcess(&apcState);
         }
     }
 
-    *NumberOfBytesWritten = NumberOfBytesToWrite;
+    *NumberOfBytesWritten = i;
     return status;
 }
 
@@ -199,14 +211,13 @@ VOID DriverUnload(PDRIVER_OBJECT pDriverObj)
 {
 	LogPrint("DriverUnload called...\r\n");
     DeleteComm(pDriverObj);
+
     if (bStartFileProtect)
         stopFileProtect();
     if (bStartProcessProtect)
         StopProcessProtect();
-    if (bStartHookPort)
-        StopHookPort();
 
-    //FreeNtos();
+    FreeNtos();
 }
 //
 //通用的派遣
@@ -240,20 +251,11 @@ NTSTATUS UserCmdDispatcher (IN PDEVICE_OBJECT DeviceObject,IN PIRP pIrp)
     case FC_COMM_TEST:
         {
             PCOMMTEST pCommTest = (PCOMMTEST)pIrp->AssociatedIrp.SystemBuffer;
-
-            gZwOpenProcessIndex = pCommTest->dwNtOpenProcessIndex;
-            gZwReadVirtualMemoryIndex  = pCommTest->dwNtReadVirtualMemoryIndex;
-            gZwWriteVirtualMemoryIndex = pCommTest->dwNtWriteVirtualMemoryIndex;
-            gOriNtOpenProcess = (PFN_NTOPENPROCESS)(ReloadKeServiceDescriptorTable->ServiceTable[gZwOpenProcessIndex]);
-            gOriNtReadVirtualMemory  = (PFN_NTREADVIRTUALMEMORY)(ReloadKeServiceDescriptorTable->ServiceTable[gZwReadVirtualMemoryIndex]);
-            gOriNtWriteVirtualMemory = (PFN_NTWRITEVIRTUALMEMORY)(ReloadKeServiceDescriptorTable->ServiceTable[gZwWriteVirtualMemoryIndex]);
-
             pCommTest->success   = TRUE;
             ProtectProcess       = PsGetCurrentProcess();
             /*在这里开启文件保护*/
             bStartFileProtect    = startFileProtect();
             bStartProcessProtect = StartProcessProtect();
-            bStartHookPort       = StartHookPort();
             info = cbout;
         }
         break;
@@ -294,6 +296,7 @@ NTSTATUS UserCmdDispatcher (IN PDEVICE_OBJECT DeviceObject,IN PIRP pIrp)
             POPEN_PROCESS_PARAMETER popp = (POPEN_PROCESS_PARAMETER)pIrp->AssociatedIrp.SystemBuffer;
             /*记录游戏进程id*/
             GameProcessId = popp->dwGamePid;
+            //LogPrint("recv parm!\r\n");
             info = 0;
         }
         break;

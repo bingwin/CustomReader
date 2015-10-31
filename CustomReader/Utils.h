@@ -223,4 +223,57 @@ typedef NTSTATUS (__stdcall *PFN_NTWRITEVIRTUALMEMORY) (
     __in SIZE_T BufferSize,
     __out_opt PSIZE_T NumberOfBytesWritten
     );
+typedef struct _OBJECT_CREATE_INFORMATION {
+    ULONG Attributes;
+    HANDLE RootDirectory;
+    PVOID ParseContext;
+    KPROCESSOR_MODE ProbeMode;
+    ULONG PagedPoolCharge;
+    ULONG NonPagedPoolCharge;
+    ULONG SecurityDescriptorCharge;
+    PSECURITY_DESCRIPTOR SecurityDescriptor;
+    PSECURITY_QUALITY_OF_SERVICE SecurityQos;
+    SECURITY_QUALITY_OF_SERVICE SecurityQualityOfService;
+} OBJECT_CREATE_INFORMATION;
+
+// begin_ntosp
+typedef struct _OBJECT_CREATE_INFORMATION *POBJECT_CREATE_INFORMATION;;
+
+typedef struct _OBJECT_HEADER {
+    LONG_PTR PointerCount;
+    union {
+        LONG_PTR HandleCount;
+        PVOID NextToFree;
+    };
+    POBJECT_TYPE Type;
+    UCHAR NameInfoOffset;
+    UCHAR HandleInfoOffset;
+    UCHAR QuotaInfoOffset;
+    UCHAR Flags;
+
+    union {
+        POBJECT_CREATE_INFORMATION ObjectCreateInfo;
+        PVOID QuotaBlockCharged;
+    };
+
+    PSECURITY_DESCRIPTOR SecurityDescriptor;
+    QUAD Body;
+} OBJECT_HEADER, *POBJECT_HEADER;
+
+#define OBJECT_TO_OBJECT_HEADER( o ) \
+    CONTAINING_RECORD( (o), OBJECT_HEADER, Body )
+
+typedef enum _MEMORY_INFORMATION_CLASS { 
+    MemoryBasicInformation
+} MEMORY_INFORMATION_CLASS;
+
+typedef NTSTATUS (__stdcall
+    *PFN_NTQUERYVIRTUALMEMORY)(
+    __in HANDLE ProcessHandle,
+    __in PVOID BaseAddress,
+    __in MEMORY_INFORMATION_CLASS MemoryInformationClass,
+    __out_bcount(MemoryInformationLength) PVOID MemoryInformation,
+    __in SIZE_T MemoryInformationLength,
+    __out_opt PSIZE_T ReturnLength
+    );
 #endif//_UTILS_H_

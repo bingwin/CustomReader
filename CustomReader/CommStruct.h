@@ -1,7 +1,9 @@
 #pragma once
 
 #define  MAX_BUFFER_LENGTH      260
-#define  PAGE_SIZE (0x1000)
+#define  PAGE_SIZE              (0x1000)
+
+#define  REGION_SIZE            (0x2000)
 //typedef unsigned char  BOOL, *PBOOL;
 //
 //通信相关结构
@@ -11,9 +13,9 @@
 typedef struct tagCOMMTEST{
 
     DWORD success;//结构体里面尽量不要使用 bool值
-    DWORD dwNtOpenProcessIndex;
-    DWORD dwNtReadVirtualMemoryIndex;
-    DWORD dwNtWriteVirtualMemoryIndex;
+    //DWORD dwNtOpenProcessIndex;
+    //DWORD dwNtReadVirtualMemoryIndex;
+    //DWORD dwNtWriteVirtualMemoryIndex;
 }COMMTEST,*PCOMMTEST;
 
 typedef struct tagNAMEINFO{
@@ -31,7 +33,7 @@ typedef struct tagNAMEINFO{
 //PSIZE_T 	NumberOfBytesRead
 typedef struct tagREADMEM_INFO{
     char   ProcessName[MAX_BUFFER_LENGTH];
-    UCHAR  Buffer[PAGE_SIZE];
+    UCHAR  Buffer[REGION_SIZE];
     PVOID  BaseAddress;
     DWORD  NumberOfBytesToRead;
     DWORD  NumberOfBytesRead;
@@ -46,7 +48,7 @@ typedef struct tagREADMEM_INFO{
     //PSIZE_T 	NumberOfBytesWritten
 typedef struct tagWRITEMEM_INFO{
     char   ProcessName[MAX_BUFFER_LENGTH];
-    UCHAR  Buffer[MAX_BUFFER_LENGTH * 2];
+    UCHAR  Buffer[REGION_SIZE];
     PVOID  BaseAddress;
     DWORD  NumberOfBytesToWrite;
     DWORD  NumberOfBytesWritten;

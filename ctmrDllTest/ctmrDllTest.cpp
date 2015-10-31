@@ -111,15 +111,21 @@ int _tmain(int argc, _TCHAR* argv[])
     ULONG g2 = 0;
     unsigned char buffer[100] ={0};
     if (PromotePrivileges()){
-        HANDLE handle1 = OpenProcessByName(L"csrss.exe");
-        printf("handle is : 0x%x\r\n",(DWORD)handle1);
-        CloseHandle(handle1);
 
         HANDLE handle = OpenProcessByName(L"DNF.exe");
         printf("handle is : 0x%x\r\n",(DWORD)handle);
 
         if (handle){
             DWORD dwRet;
+            MEMORY_BASIC_INFORMATION mbi = {0};
+            if(sizeof(MEMORY_BASIC_INFORMATION) != VirtualQueryEx(handle,(LPVOID)0x417000,&mbi,sizeof(MEMORY_BASIC_INFORMATION))){
+                 printf("VirtualQueryEx failed ,last err: %d\r\n",GetLastError());
+            }
+            else{
+                printf("VirtualQueryEx ok!\r\n");
+                printf("mbi.BaseAddress : 0x%p\r\n",mbi.BaseAddress);
+                printf("mbi.RegionSize : 0x%p\r\n",mbi.RegionSize);
+            }
             if (ReadProcessMemory(handle,(LPVOID)0x417000,&g1,4,&dwRet)){
                 printf("g1 : 0x%x\r\n",g1);
             }

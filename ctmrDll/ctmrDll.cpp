@@ -392,9 +392,9 @@ BOOL _stdcall CommTest()
     if (hDevice == NULL)
         return false;
     COMMTEST ct                    = {0};
-    ct.dwNtOpenProcessIndex        = gZwOpenProcessIndex;
-    ct.dwNtReadVirtualMemoryIndex  = gZwReadVirtualMemoryIndex;
-    ct.dwNtWriteVirtualMemoryIndex = gZwWriteVirtualMemoryIndex;
+    //ct.dwNtOpenProcessIndex        = gZwOpenProcessIndex;
+    //ct.dwNtReadVirtualMemoryIndex  = gZwReadVirtualMemoryIndex;
+    //ct.dwNtWriteVirtualMemoryIndex = gZwWriteVirtualMemoryIndex;
     DWORD dwRet                 = 0;
     if(MyDeviceIoControl(hDevice,FC_COMM_TEST,&ct,sizeof(COMMTEST),&ct,sizeof(COMMTEST),&dwRet,NULL)){
         if (ct.success){
@@ -602,19 +602,14 @@ NTSTATUS NTAPI  avZwOpenProcess(
                 if (_stricmp(DecryptString,ni.ProcessName) == 0){
                     /*记录游戏pid*/
                     gGamePid = (DWORD)ClientId->UniqueProcess;
-                    //*ProcessHandle = (HANDLE)FAKE_HANDLE;
-                    //SendOpenProcessParameter((HANDLE)0,gGamePid);
-                    //return STATUS_SUCCESS;
+                    *ProcessHandle = (HANDLE)FAKE_HANDLE;
+                    SendOpenProcessParameter((HANDLE)FAKE_HANDLE,gGamePid);
+                    return STATUS_SUCCESS;
                     }
                 }
             }
         }
-    status = nakedZwOpenProcess(ProcessHandle,DesiredAccess,ObjectAttributes,ClientId);
-    if (status == STATUS_SUCCESS){
-        /*记录游戏进程句柄*/
-        gGameHandle = *ProcessHandle;
-    }
-    return status;
+    return nakedZwOpenProcess(ProcessHandle,DesiredAccess,ObjectAttributes,ClientId);
 }
 
 NTSTATUS NTAPI  avZwReadVirtualMemory(	
@@ -625,29 +620,34 @@ NTSTATUS NTAPI  avZwReadVirtualMemory(
     PSIZE_T 	NumberOfBytesRead )
 {
     char DecryptString[20] = {0};
-    if (ProcessHandle == gGameHandle){
+    //DWORD dwLength         = MAX_BUFFER_LENGTH;
+    if (ProcessHandle == (HANDLE)FAKE_HANDLE){
 
         /*如果要读取的字节大于 MAX_BUFFER * 2的话，不能读取*/
-        if (NumberOfBytesToRead > PAGE_SIZE){
-            return STATUS_UNSUCCESSFUL;
-        }
+        if (NumberOfBytesToRead > REGION_SIZE)
+            NumberOfBytesToRead = REGION_SIZE;
         //要读取关注进程的内存
         PREADMEM_INFO pri = new READMEM_INFO;
         if (pri == NULL)
             return STATUS_UNSUCCESSFUL;
+
         /*清零*/
         memset(pri,0,sizeof(READMEM_INFO));
+        /*解密字符串*/
         SimpleDecryptString(GameProcessName,strlen(GameProcessName),DecryptString);
         strcpy_s(pri->ProcessName,MAX_BUFFER_LENGTH,DecryptString);
         pri->BaseAddress         = BaseAddress;
         pri->NumberOfBytesToRead = NumberOfBytesToRead;
         pri->ProcessId           = gGamePid;
+
         if (avReadMemory(pri)){
-            memcpy_s(Buffer,NumberOfBytesToRead,pri->Buffer,NumberOfBytesToRead);
-            *NumberOfBytesRead = pri->NumberOfBytesRead;
+            memcpy_s(Buffer,REGION_SIZE,pri->Buffer,pri->NumberOfBytesRead);
+            if(NumberOfBytesRead != NULL)
+                *NumberOfBytesRead = pri->NumberOfBytesRead;
             delete pri;
             return STATUS_SUCCESS;
         }
+        delete pri;
     }
     return nakedZwReadVirtualMemory(ProcessHandle,BaseAddress,Buffer,NumberOfBytesToRead,NumberOfBytesRead);
 }
@@ -660,16 +660,17 @@ NTSTATUS NTAPI avZwWriteVirtualMemory(
     PSIZE_T 	NumberOfBytesWritten )
 {
     char DecryptString[20] = {0};
-    if (ProcessHandle == gGameHandle){
+    if (ProcessHandle == (HANDLE)FAKE_HANDLE){
         //要写入关注进程的内存
         /*如果要写入的字节大于 MAX_BUFFER * 2的话，不能写入*/
-        if (NumberOfBytesToWrite > PAGE_SIZE){
-            return STATUS_UNSUCCESSFUL;
-        }
+        if (NumberOfBytesToWrite > REGION_SIZE)
+            NumberOfBytesToWrite = REGION_SIZE;
+
         //要写入关注进程的内存
         PWRITEMEM_INFO pwi = new WRITEMEM_INFO;
         if (pwi == NULL)
             return STATUS_UNSUCCESSFUL;
+
         SimpleDecryptString(GameProcessName,strlen(GameProcessName),DecryptString);
         /*清零*/
         memset(pwi,0,sizeof(WRITEMEM_INFO));
@@ -677,12 +678,14 @@ NTSTATUS NTAPI avZwWriteVirtualMemory(
         pwi->BaseAddress          = BaseAddress;
         pwi->NumberOfBytesToWrite = NumberOfBytesToWrite;
         pwi->ProcessId            = gGamePid;
-        memcpy_s(pwi->Buffer,PAGE_SIZE,Buffer,NumberOfBytesToWrite);
+        memcpy_s(pwi->Buffer,REGION_SIZE,Buffer,NumberOfBytesToWrite);
         if (avWriteMemory(pwi)){
-            *NumberOfBytesWritten = pwi->NumberOfBytesWritten;
+            if(NumberOfBytesWritten != NULL)
+                *NumberOfBytesWritten = pwi->NumberOfBytesWritten;
             delete pwi;
             return STATUS_SUCCESS;
         }
+        delete pwi;
     }
     return nakedZwWriteVirtualMemory(ProcessHandle,BaseAddress,Buffer,NumberOfBytesToWrite,NumberOfBytesWritten);
 }
@@ -767,9 +770,9 @@ CTMR_API BOOL _cdecl InitCustomReader()
     }
 
     /*进行R3 hook*/
-//     Mhook_SetHook((PVOID*)&pfnOriZwOpenProcess,avZwOpenProcess);
-//     Mhook_SetHook((PVOID*)&pfnOriZwReadVirtualMemory,avZwReadVirtualMemory);
-//     Mhook_SetHook((PVOID*)&pfnOriZwWriteVirtualMemory,avZwWriteVirtualMemory);
+    Mhook_SetHook((PVOID*)&pfnOriZwOpenProcess,avZwOpenProcess);
+    Mhook_SetHook((PVOID*)&pfnOriZwReadVirtualMemory,avZwReadVirtualMemory);
+    Mhook_SetHook((PVOID*)&pfnOriZwWriteVirtualMemory,avZwWriteVirtualMemory);
 
 
     return bRet;
@@ -781,7 +784,7 @@ CTMR_API BOOL _cdecl InitCustomReader()
 CTMR_API void _cdecl UnloadCustomReader()
 {
     UnloadDriver(CTMR_NAME);
-//     Mhook_Unhook((PVOID*)&pfnOriZwOpenProcess);
-//     Mhook_Unhook((PVOID*)&pfnOriZwReadVirtualMemory);
-//     Mhook_Unhook((PVOID*)&pfnOriZwWriteVirtualMemory);
+    Mhook_Unhook((PVOID*)&pfnOriZwOpenProcess);
+    Mhook_Unhook((PVOID*)&pfnOriZwReadVirtualMemory);
+    Mhook_Unhook((PVOID*)&pfnOriZwWriteVirtualMemory);
 }

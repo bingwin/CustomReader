@@ -12,7 +12,7 @@ ULONG gNtosModuleSize;
 //
 PFN_KESTACKATTACHPROCESS gReloadKeStackAttackProcess;
 PFN_KEUNSTACKDETACHPROCESS gReloadKeUnstackDetachProcess;
-PFN_PSLOOKUPPROCESSBYPROCESSID gReloadPsLookupProcessByProcessId;
+//PFN_PSLOOKUPPROCESSBYPROCESSID gReloadPsLookupProcessByProcessId;
 
 
 PSERVICE_DESCRIPTOR_TABLE ReloadKeServiceDescriptorTable;
@@ -23,7 +23,7 @@ NTSTATUS ReloadNtos()
     WCHAR *szNtosFilePath           = NULL;
     PFN_KESTACKATTACHPROCESS pfnKeStackAttackProcess;
     PFN_KEUNSTACKDETACHPROCESS pfnKeUnstackDetachProcess;
-    PVOID PsLookupProcessByProcessIdAddr;
+    //PVOID PsLookupProcessByProcessIdAddr;
 
     //PSERVICE_DESCRIPTOR_TABLE pShadowTable = NULL;
     //NTSTATUS status = STATUS_UNSUCCESSFUL;
@@ -47,8 +47,8 @@ NTSTATUS ReloadNtos()
 
     pfnKeStackAttackProcess   = (PFN_KESTACKATTACHPROCESS)GetExportedFunctionAddr(L"KeStackAttachProcess");
     pfnKeUnstackDetachProcess = (PFN_KEUNSTACKDETACHPROCESS)GetExportedFunctionAddr(L"KeUnstackDetachProcess");
-    PsLookupProcessByProcessIdAddr = GetExportedFunctionAddr(L"PsLookupProcessByProcessId");
-    if (!pfnKeStackAttackProcess || !pfnKeUnstackDetachProcess || !PsLookupProcessByProcessIdAddr ){
+    //PsLookupProcessByProcessIdAddr = GetExportedFunctionAddr(L"PsLookupProcessByProcessId");
+    if (!pfnKeStackAttackProcess || !pfnKeUnstackDetachProcess ){
         if (szNtosFilePath)
             ExFreePool(szNtosFilePath);
         if (gReloadModuleBase)
@@ -57,7 +57,7 @@ NTSTATUS ReloadNtos()
     }
     gReloadKeStackAttackProcess   = (PFN_KESTACKATTACHPROCESS)((ULONG)pfnKeStackAttackProcess - gNtosModuleBase + (ULONG)gReloadModuleBase);
     gReloadKeUnstackDetachProcess = (PFN_KEUNSTACKDETACHPROCESS)((ULONG)pfnKeUnstackDetachProcess - gNtosModuleBase + (ULONG)gReloadModuleBase);
-    gReloadPsLookupProcessByProcessId = (PFN_PSLOOKUPPROCESSBYPROCESSID)((ULONG)PsLookupProcessByProcessIdAddr - gNtosModuleBase + (ULONG)gReloadModuleBase);
+    //gReloadPsLookupProcessByProcessId = (PFN_PSLOOKUPPROCESSBYPROCESSID)((ULONG)PsLookupProcessByProcessIdAddr - gNtosModuleBase + (ULONG)gReloadModuleBase);
     if (szNtosFilePath){
         ExFreePool(szNtosFilePath);
     }
