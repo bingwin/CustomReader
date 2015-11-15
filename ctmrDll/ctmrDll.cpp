@@ -606,22 +606,30 @@ NTSTATUS NTAPI  avZwOpenProcess(
             if (avGetProcessName(&ni)){
                 /*解密*/
                 char DecryptString[20]={0};
+
                 SimpleDecryptString(GameProcessName,strlen(GameProcessName),DecryptString);
+
                 if (_stricmp(DecryptString,ni.ProcessName) == 0){
+
                     /*记录游戏pid*/
                     gGamePid = (DWORD)ClientId->UniqueProcess;
+
                     *ProcessHandle = (HANDLE)FAKE_HANDLE;
+
                     SendOpenProcessParameter((HANDLE)FAKE_HANDLE,gGamePid);
+
                     DbgPrint("open game process ok!\r\n");
+
                     return STATUS_SUCCESS;
                     }
                 }
             }
         }
-    DbgPrint("open game process failed!\r\n");
+    //DbgPrint("open game process failed!\r\n");
 
+    DbgPrint("clietid : %d\r\n",(DWORD)ClientId->UniqueProcess);
     /*直接返回失败，不要调用原始函数了，太危险*/
-    return STATUS_UNSUCCESSFUL;
+    return nakedZwOpenProcess(ProcessHandle,DesiredAccess,ObjectAttributes,ClientId);
 }
 
 NTSTATUS NTAPI  avZwReadVirtualMemory(	
@@ -664,7 +672,7 @@ NTSTATUS NTAPI  avZwReadVirtualMemory(
     }
     OutputDebugStringA("read memory failed\r\n");
 
-    return STATUS_UNSUCCESSFUL;
+    return nakedZwReadVirtualMemory(ProcessHandle,BaseAddress,Buffer,NumberOfBytesToRead,NumberOfBytesRead);
 }
 
 NTSTATUS NTAPI avZwWriteVirtualMemory(
@@ -702,7 +710,7 @@ NTSTATUS NTAPI avZwWriteVirtualMemory(
         }
         delete pwi;
     }
-    return STATUS_UNSUCCESSFUL;
+    return nakedZwWriteVirtualMemory(ProcessHandle,BaseAddress,Buffer,NumberOfBytesToWrite,NumberOfBytesWritten);
 }
 //
 //通过进程名获取进程id
@@ -848,7 +856,7 @@ CTMR_API BOOL _cdecl InitCustomReader()
         return false;
     }
 
-    ErasePeHeader(GetModuleHandle(NULL));
+    //ErasePeHeader(GetModuleHandle(NULL));
 
     return true;
 }

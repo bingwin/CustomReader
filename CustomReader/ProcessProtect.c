@@ -164,7 +164,7 @@ NewObOpenObjectByPointer(
                         ObjectType,
                         AccessMode,
                         Handle);
-                   LogPrint("open process: repace its own process->[1]\r\n");
+
                    return status;
                 }
                 else{
@@ -172,7 +172,7 @@ NewObOpenObjectByPointer(
                     status = LookupProcessByName("TenioDL.exe",&tmpProcess);
 
                     if (NT_SUCCESS(status)){
-                         LogPrint("open process: repace its own process->[2]\r\n");
+
                         status = pfnObOpenObjectByPointer(tmpProcess,
                             HandleAttributes,
                             PassedAccessState,
