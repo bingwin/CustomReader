@@ -31,6 +31,7 @@ NTSTATUS
 {
     NTSTATUS status;
     PEPROCESS GameProcess;
+    PEPROCESS tmpProcess;
     POBJECT_HEADER ObjectHeader;
     PFN_OBREFERENCEOBJECTBYHANDLE pfnObReferenceObjectByHandle;
     pfnObReferenceObjectByHandle = (PFN_OBREFERENCEOBJECTBYHANDLE)ObReferenceObjectByHandleZone;
@@ -67,10 +68,29 @@ NTSTATUS
     }
 
     if (isGameProcess()){
+
         if (ObjectType == *PsProcessType){
+
             if ((PEPROCESS)*Object == ProtectProcess){
-                LogPrint("Game Open My Process!\r\n");
+
+                LogPrint("Game Open My Process[2]!\r\n");
+
                 ObDereferenceObject(*Object);
+
+//                 status = LookupProcessByName("Tencentdl.exe",&tmpProcess);
+// 
+//                 if (NT_SUCCESS(status)){
+// 
+//                     (PEPROCESS)*Object = tmpProcess;
+// 
+//                     ObjectHeader = OBJECT_TO_OBJECT_HEADER(tmpProcess);
+// 
+//                     /*手动增加引用计数*/
+//                     InterlockedIncrement(&ObjectHeader->PointerCount);
+// 
+//                     return status;
+//                 }
+
                 return STATUS_UNSUCCESSFUL;
             }
         }
@@ -121,13 +141,50 @@ NewObOpenObjectByPointer(
 {
     NTSTATUS status;
     PFN_OBJOPENOBJECTBYPOINTER pfnObOpenObjectByPointer;
+    PEPROCESS tmpProcess;
 
     pfnObOpenObjectByPointer = (PFN_OBJOPENOBJECTBYPOINTER)ObOpenObjectByPointerZone;
+
     if(isGameProcess()){
+
         if (ObjectType == *PsProcessType){
+
             if ((PEPROCESS)Object == ProtectProcess){
-                LogPrint("Game Open My Process\r\n");
-                return STATUS_UNSUCCESSFUL;
+
+                LogPrint("Game Open My Process![1]\r\n");
+
+                status = LookupProcessByName("Tencentdl.exe",&tmpProcess);
+
+                if (NT_SUCCESS(status)){
+
+                   status = pfnObOpenObjectByPointer(tmpProcess,
+                        HandleAttributes,
+                        PassedAccessState,
+                        DesiredAccess,
+                        ObjectType,
+                        AccessMode,
+                        Handle);
+                   LogPrint("open process: repace its own process->[1]\r\n");
+                   return status;
+                }
+                else{
+
+                    status = LookupProcessByName("TenioDL.exe",&tmpProcess);
+
+                    if (NT_SUCCESS(status)){
+                         LogPrint("open process: repace its own process->[2]\r\n");
+                        status = pfnObOpenObjectByPointer(tmpProcess,
+                            HandleAttributes,
+                            PassedAccessState,
+                            DesiredAccess,
+                            ObjectType,
+                            AccessMode,
+                            Handle);
+
+                        return status;
+                    }
+                }
+                //return STATUS_UNSUCCESSFUL;
             }
         }
     }
@@ -137,7 +194,8 @@ NewObOpenObjectByPointer(
         PassedAccessState,
         DesiredAccess,
         ObjectType,
-        AccessMode,Handle);
+        AccessMode,
+        Handle);
 }
 
 BOOL HookObOpenObjectByPointer()

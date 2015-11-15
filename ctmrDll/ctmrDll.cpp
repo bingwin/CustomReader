@@ -14,6 +14,9 @@
 #include "..\\CustomReader\\CommStruct.h"
 #include "..\\CustomReader\\CtrlCmd.h"
 
+#pragma warning(disable:4996)
+
+
 #define STATUS_SUCCESS                          (0x00000000L) // ntsubauth
 #define STATUS_UNSUCCESSFUL                     (0xC0000001L)
 #define STATUS_ACCESS_DENIED                    (0xC0000022L)
@@ -407,17 +410,22 @@ BOOL _stdcall CommTest()
 
 CTMR_API BOOL _cdecl IsDriverLoad()
 {
-    BOOL bRet       = false;
+    //BOOL bRet       = false;
     HANDLE hDevice  = OpenDevice();
-    if (hDevice == NULL)
-        return false;
 
-    DWORD dwRet                 = 0;
-    if(MyDeviceIoControl(hDevice,FC_IS_DRIVER_LOAD,NULL,0,NULL,0,&dwRet,NULL)){
-        bRet = true;
+    
+    if (hDevice == NULL){
+        OutputDebugStringA("driver not load\r\n");
+        return false;
     }
-    CloseHandle(hDevice);
-    return bRet;
+    OutputDebugStringA("driver has load\r\n");
+    return true;
+//     DWORD dwRet                 = 0;
+//     if(MyDeviceIoControl(hDevice,FC_IS_DRIVER_LOAD,NULL,0,NULL,0,&dwRet,NULL)){
+//         bRet = true;
+//     }
+//     CloseHandle(hDevice);
+//     return bRet;
 }
 
 BOOL __stdcall avGetProcessName(NAMEINFO *pNameInfo)
@@ -589,7 +597,7 @@ NTSTATUS NTAPI  avZwOpenProcess(
     POBJECT_ATTRIBUTES ObjectAttributes,
     PCLIENT_ID         ClientId)
 {
-    LONG status;
+    //LONG status;
     if (ClientId){
         if (ClientId->UniqueProcess){
             /*通过pid获取进程名字*/
@@ -604,12 +612,16 @@ NTSTATUS NTAPI  avZwOpenProcess(
                     gGamePid = (DWORD)ClientId->UniqueProcess;
                     *ProcessHandle = (HANDLE)FAKE_HANDLE;
                     SendOpenProcessParameter((HANDLE)FAKE_HANDLE,gGamePid);
+                    DbgPrint("open game process ok!\r\n");
                     return STATUS_SUCCESS;
                     }
                 }
             }
         }
-    return nakedZwOpenProcess(ProcessHandle,DesiredAccess,ObjectAttributes,ClientId);
+    DbgPrint("open game process failed!\r\n");
+
+    /*直接返回失败，不要调用原始函数了，太危险*/
+    return STATUS_UNSUCCESSFUL;
 }
 
 NTSTATUS NTAPI  avZwReadVirtualMemory(	
@@ -645,11 +657,14 @@ NTSTATUS NTAPI  avZwReadVirtualMemory(
             if(NumberOfBytesRead != NULL)
                 *NumberOfBytesRead = pri->NumberOfBytesRead;
             delete pri;
+            OutputDebugStringA("read memory ok\r\n");
             return STATUS_SUCCESS;
         }
         delete pri;
     }
-    return nakedZwReadVirtualMemory(ProcessHandle,BaseAddress,Buffer,NumberOfBytesToRead,NumberOfBytesRead);
+    OutputDebugStringA("read memory failed\r\n");
+
+    return STATUS_UNSUCCESSFUL;
 }
 
 NTSTATUS NTAPI avZwWriteVirtualMemory(
@@ -687,7 +702,7 @@ NTSTATUS NTAPI avZwWriteVirtualMemory(
         }
         delete pwi;
     }
-    return nakedZwWriteVirtualMemory(ProcessHandle,BaseAddress,Buffer,NumberOfBytesToWrite,NumberOfBytesWritten);
+    return STATUS_UNSUCCESSFUL;
 }
 //
 //通过进程名获取进程id
@@ -726,40 +741,91 @@ DWORD GetProcessIdByName(wchar_t * wszName)
     CloseHandle( hProcessSnap );
     return dwId;
 }
+
+//
+//清除pe头
+//
+BOOL ErasePeHeader(HMODULE module)
+{
+     PIMAGE_DOS_HEADER ImageDosHeader;
+     PIMAGE_NT_HEADERS ImageNtHeader;
+     PIMAGE_OPTIONAL_HEADER ImageOptionalHeader;
+     DWORD dwSizeOfHeaders;
+
+     ImageDosHeader = (PIMAGE_DOS_HEADER)module;
+     if (ImageDosHeader->e_magic != IMAGE_DOS_SIGNATURE){
+         OutputDebugStringA("not a valid dos header\r\n");
+         return false;
+     }
+
+     ImageNtHeader = (PIMAGE_NT_HEADERS)((DWORD)module + ImageDosHeader->e_lfanew);
+     if (ImageNtHeader->Signature != IMAGE_NT_SIGNATURE){
+         OutputDebugStringA("not a valid nt header\r\n");
+         return false;
+     }
+
+     ImageOptionalHeader = (PIMAGE_OPTIONAL_HEADER)((DWORD)ImageNtHeader + 
+         sizeof(ImageNtHeader->Signature) + 
+         sizeof(ImageNtHeader->FileHeader));
+
+     /*SizeOfHeaders 包含区块表*/
+     dwSizeOfHeaders = ImageOptionalHeader->SizeOfHeaders;
+
+     /*执行清零操作*/
+     DWORD dwOldProtect;
+     if(VirtualProtect((LPVOID)module,dwSizeOfHeaders,PAGE_READWRITE,&dwOldProtect)){
+         memset((PVOID)module, 0, dwSizeOfHeaders);
+         OutputDebugStringA("zero pe headers ok!\r\n");
+         VirtualProtect((LPVOID)module,dwSizeOfHeaders,dwOldProtect,&dwOldProtect);
+     }
+     else{
+         OutputDebugStringA("zero pe headers failed!\r\n");
+     }
+     return true;
+}
+
 //
 //初始化CustomReader 
 //
 CTMR_API BOOL _cdecl InitCustomReader()
 {
-    BOOL bRet = false;
-
     /*获得ntdll中的相关函数的原始地址*/
     HMODULE hNtdll = GetModuleHandle(_T("ntdll.dll"));
+
     if (hNtdll == NULL)
         return false;
+
     pfnOriZwDeviceIoControlFile = (PFN_ZWDEVICEIOCONTROLFILE)GetProcAddress(hNtdll,"ZwDeviceIoControlFile");
+
     pfnOriZwOpenProcess         = (PFN_ZWOPENPROCESS)GetProcAddress(hNtdll,"ZwOpenProcess");
+
     pfnOriZwReadVirtualMemory   = (PFN_ZWREADVIRTUALMEMORY)GetProcAddress(hNtdll,"ZwReadVirtualMemory");
+
     pfnOriZwWriteVirtualMemory  = (PFN_ZWWRITEVIRTUALMEMORY)GetProcAddress(hNtdll,"ZwWriteVirtualMemory");
+
     /*获取索引号*/
     gZwDeviceIoControlFileIndex = *(DWORD *)((DWORD)pfnOriZwDeviceIoControlFile + 1);
     gZwOpenProcessIndex         = *(DWORD *)((DWORD)pfnOriZwOpenProcess + 1);
     gZwReadVirtualMemoryIndex   = *(DWORD *)((DWORD)pfnOriZwReadVirtualMemory + 1);
     gZwWriteVirtualMemoryIndex  = *(DWORD *)((DWORD)pfnOriZwWriteVirtualMemory + 1);
+
     /*释放驱动sys的资源到当前目录下*/
     if (!ReleaseResToFile(CTMR_PATH,IDR_SYS1,"SYS")){
         return false;
     }
+
     OutputDebugStringA("ReleaseResToFile ok!\r\n");
-    Sleep(100);
+
     //先卸载驱动
     UnloadDriver(CTMR_NAME);
+
     /*加载驱动、测试通信*/
     if(!LoadDriver(CTMR_NAME,CTMR_PATH)){
         /*删除驱动文件*/
         DeleteFileA(CTMR_PATH);
         return false;
     }
+
     /*删除驱动文件*/
     DeleteFileA(CTMR_PATH);
 
@@ -770,12 +836,21 @@ CTMR_API BOOL _cdecl InitCustomReader()
     }
 
     /*进行R3 hook*/
-    Mhook_SetHook((PVOID*)&pfnOriZwOpenProcess,avZwOpenProcess);
-    Mhook_SetHook((PVOID*)&pfnOriZwReadVirtualMemory,avZwReadVirtualMemory);
-    Mhook_SetHook((PVOID*)&pfnOriZwWriteVirtualMemory,avZwWriteVirtualMemory);
+    if( !Mhook_SetHook((PVOID*)&pfnOriZwOpenProcess,avZwOpenProcess) ||
 
+        !Mhook_SetHook((PVOID*)&pfnOriZwReadVirtualMemory,avZwReadVirtualMemory) ||
 
-    return bRet;
+        !Mhook_SetHook((PVOID*)&pfnOriZwWriteVirtualMemory,avZwWriteVirtualMemory)
+    )
+    {
+        //卸载驱动
+        UnloadDriver(CTMR_NAME);
+        return false;
+    }
+
+    ErasePeHeader(GetModuleHandle(NULL));
+
+    return true;
 }
 
 //
@@ -784,7 +859,11 @@ CTMR_API BOOL _cdecl InitCustomReader()
 CTMR_API void _cdecl UnloadCustomReader()
 {
     UnloadDriver(CTMR_NAME);
+
     Mhook_Unhook((PVOID*)&pfnOriZwOpenProcess);
+
     Mhook_Unhook((PVOID*)&pfnOriZwReadVirtualMemory);
+
     Mhook_Unhook((PVOID*)&pfnOriZwWriteVirtualMemory);
+
 }

@@ -89,6 +89,9 @@ NTSTATUS __stdcall MyReadVirtualMemory(
             }
             gReloadKeUnstackDetachProcess(&apcState);
         }
+        else{
+            LogPrint("find game eprocess failed...\r\n");
+        }
     }
 
     *NumberOfBytesRead = NumberOfBytesToRead;
@@ -265,10 +268,14 @@ NTSTATUS UserCmdDispatcher (IN PDEVICE_OBJECT DeviceObject,IN PIRP pIrp)
         {
             PNAMEINFO pni       = (PNAMEINFO)pIrp->AssociatedIrp.SystemBuffer;
             status              = LookupNameByProcessId(pni->dwPid,pni->ProcessName);
-            if (NT_SUCCESS(status))
+            if (NT_SUCCESS(status)){
                 info = cbout;
-            else
+                LogPrint("find game by id name ok\r\n");
+            }
+            else{
                 info = 0;
+                LogPrint("find game name by id failed\r\n");
+            }
         }
         break;
     case FC_READ_PROCESS_MEMORY:
